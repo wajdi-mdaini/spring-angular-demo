@@ -4,13 +4,16 @@ import io.jsonwebtoken.security.Keys;
 import java.security.Key;
 import java.util.Date;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class JwtUtil {
 
-    private final String SECRET_KEY = "mysecretkeymysecretkeymysecretkey123"; // min 32 chars
-    private final long EXPIRATION = 1000 * 60 * 60; // 1 hour
+    @Value("${demo.token.secretkey}")
+    private String SECRET_KEY;
+    @Value("${demo.token.expiration}")
+    private long EXPIRATION;
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
