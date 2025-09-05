@@ -28,8 +28,10 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf().disable() // optional for APIs
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/user/login").permitAll()
-                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/auth/login").permitAll()
+                        .requestMatchers("/administration/**").hasRole("ADMIN")
+                        .requestMatchers("/management/**").hasAnyRole("ADMIN","MANAGER")
+                        .requestMatchers("/employee/**").hasAnyRole("ADMIN","MANAGER","EMPLOYEE")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
