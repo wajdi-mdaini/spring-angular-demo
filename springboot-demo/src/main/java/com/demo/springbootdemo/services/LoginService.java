@@ -8,7 +8,11 @@ import com.demo.springbootdemo.entity.Role;
 import com.demo.springbootdemo.entity.User;
 import com.demo.springbootdemo.model.*;
 import jakarta.mail.MessagingException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,9 +35,12 @@ public class LoginService {
     @Autowired
     private SharedSettings sharedSettings;
 
+    @Value("${app.token.expiration}")
+    private int EXPIRATION;
 
     @RequestMapping(path = "/login", method = RequestMethod.POST)
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest loginRequest,
+                                                            HttpServletResponse httpResponse) {
         ApiResponse<LoginResponse> response = new ApiResponse<>();
         User loggedInUser = userController.login(loginRequest.getEmail(),loginRequest.getPassword());
         if( loggedInUser != null){
@@ -45,11 +52,19 @@ public class LoginService {
                 response.setSuccess(false);
                 response.setMessageLabel("auth_signin_blocked_user_error_message");
             }else{
-                loginResponse.setToken(jwtUtil.generateToken(loggedInUser.getEmail()));
+                String jwtToken = jwtUtil.generateToken(loggedInUser.getEmail());
+                loginResponse.setToken(jwtToken);
                 response.setData(loginResponse);
                 response.setStatus(HttpStatus.OK);
                 response.setSuccess(true);
                 response.setShowToast(false);
+                Cookie cookie = new Cookie("jwt", jwtToken);
+                cookie.setHttpOnly(true); // protect from JavaScript
+                cookie.setSecure(true);   // only HTTPS
+                cookie.setPath("/");      // available for the whole domain
+                cookie.setMaxAge(EXPIRATION * 60); // 30 minutes for expiration
+                httpResponse.addCookie(cookie);
+
             }
 
         }else {
@@ -104,5 +119,23 @@ public class LoginService {
         response.setSuccess(true);
         response.setShowToast(false);
         return new ResponseEntity<>( response , response.getStatus());
+    }
+
+    @GetMapping("/login/check")
+    public ResponseEntity<?> checkAuth(HttpServletRequest request) {
+        String token = null;
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("jwt".equals(cookie.getName())) {
+                    token = cookie.getValue();
+                }
+            }
+        }
+
+        if (token != null && jwtUtil.validateToken(token)) {
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 }
