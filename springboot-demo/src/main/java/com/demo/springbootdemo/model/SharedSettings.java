@@ -8,6 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "app.shared")
 public class SharedSettings {
     private int verificationCodeLength;
+    private int verificationCodeExpireIn;
 
     public int getVerificationCodeLength() {
         return Math.min(verificationCodeLength, 6);

@@ -13,6 +13,7 @@ public class PasswordGenerator {
     private static final String DIGITS = "0123456789";
     private static final String SPECIAL = "!@#$%^&*()-_=+[]{}|;:,.<>?";
     private static final String ALL_CHARS = UPPER + LOWER + DIGITS + SPECIAL;
+    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     @Value("${app.generated.password.length}")
     private int passwordLength;
@@ -54,5 +55,14 @@ public class PasswordGenerator {
             characters[randomIndex] = temp;
         }
         return new String(characters);
+    }
+
+    public String generateCode() {
+        StringBuilder sb = new StringBuilder(verificationCodeLength);
+        for (int i = 0; i < verificationCodeLength; i++) {
+            int index = random.nextInt(CHARACTERS.length());
+            sb.append(CHARACTERS.charAt(index));
+        }
+        return sb.toString();
     }
 }

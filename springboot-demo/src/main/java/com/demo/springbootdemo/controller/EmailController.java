@@ -1,6 +1,7 @@
 package com.demo.springbootdemo.controller;
 
 import com.demo.springbootdemo.configuration.EmailConfigProperties;
+import com.demo.springbootdemo.entity.User;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,7 @@ public class EmailController {
     /**
      * Send welcome email with generated password to new user
      */
-    public void sendWelcomePasswordEmail(String to, String name,
+    public void sendWelcomePasswordEmail(String name,
                                          String email, String generatedPassword, String companyName)
             throws MessagingException {
 
@@ -42,7 +43,22 @@ public class EmailController {
         String subject = "Welcome to WorkSync Platform - Your Login Credentials";
         String htmlContent = templateEngine.process("email/welcome-password", context);
 
-        sendHtmlEmail(to, subject, htmlContent);
+        sendHtmlEmail(email, subject, htmlContent);
+    }
+
+    public void sendResetPasswordConfirmationEmail(String email, String generatedCode,User user,long verificationExpireIn)
+            throws MessagingException {
+        Context context = new Context();
+        context.setVariable("name", user.getFirstname() + " " + user.getLastname());
+        context.setVariable("code", generatedCode);
+        context.setVariable("currentYear", new Date().getYear() + 1900);
+        context.setVariable("companyName", user.getCompany().getName().toUpperCase());
+        context.setVariable("verificationExpireIn", verificationExpireIn);
+
+        String subject = "WorkSync Platform - Password Reset Confirmation";
+        String htmlContent = templateEngine.process("email/password-confirmation", context);
+
+        sendHtmlEmail(email, subject, htmlContent);
     }
 
     private void sendHtmlEmail(String to, String subject, String htmlContent)

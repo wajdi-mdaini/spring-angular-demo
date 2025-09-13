@@ -1,5 +1,6 @@
 package com.demo.springbootdemo.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,14 +14,16 @@ import java.util.List;
 @Setter @Getter
 public class User {
     @Id private String email;
-    private String password;
+    @JsonIgnore String password;
     private String firstname;
     private String lastname;
     private LocalDate dateOfBirth;
     private LocalDate  creationDate;
+    private LocalDate  lastPasswordResetDate;
     private boolean isFirstLogin;
     private boolean locked;
     private int attempts;
+    private String verificationCode;
     @Enumerated(EnumType.STRING)
     private Role role;
 

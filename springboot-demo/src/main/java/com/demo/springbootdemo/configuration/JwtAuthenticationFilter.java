@@ -48,8 +48,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             if (jwtUtil.validateToken(token)) {
-                com.demo.springbootdemo.entity.User userDetails = userRepository.findByEmail(username)
-                        .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                com.demo.springbootdemo.entity.User userDetails = userRepository.findByEmail(username);
                 var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + userDetails.getRole().name()));
 
                 UsernamePasswordAuthenticationToken authToken =
