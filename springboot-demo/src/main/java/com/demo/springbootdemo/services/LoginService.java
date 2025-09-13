@@ -97,7 +97,12 @@ public class LoginService {
     }
 
     @RequestMapping(path = "/settings", method = RequestMethod.GET)
-    public SharedSettings getSharedSettings() {
-        return sharedSettings;
+    public ResponseEntity<ApiResponse<SharedSettings>> getSharedSettings() {
+        ApiResponse<SharedSettings> response = new ApiResponse<>();
+        response.setData(sharedSettings);
+        response.setStatus(HttpStatus.OK);
+        response.setSuccess(true);
+        response.setShowToast(false);
+        return new ResponseEntity<>( response , response.getStatus());
     }
 }
