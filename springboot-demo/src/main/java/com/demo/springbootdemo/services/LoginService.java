@@ -120,23 +120,23 @@ public class LoginService {
         return new ResponseEntity<>( response , response.getStatus());
     }
 
-    @GetMapping("/login/check")
-    public ResponseEntity<?> checkAuth(HttpServletRequest request) {
-        String token = null;
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("jwt".equals(cookie.getName())) {
-                    token = cookie.getValue();
-                }
-            }
-        }
-
-        if (token != null && jwtUtil.validateToken(token)) {
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-    }
+//    @GetMapping("/login/check")
+//    public ResponseEntity<?> checkAuth(HttpServletRequest request) {
+//        String token = null;
+//        if (request.getCookies() != null) {
+//            for (Cookie cookie : request.getCookies()) {
+//                if ("jwt".equals(cookie.getName())) {
+//                    token = cookie.getValue();
+//                }
+//            }
+//        }
+//
+//        if (token != null && jwtUtil.validateToken(token)) {
+//            return ResponseEntity.ok().build();
+//        } else {
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+//        }
+//    }
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletResponse response) {
         Cookie cookie = new Cookie("jwt", null);
@@ -148,7 +148,7 @@ public class LoginService {
         return ResponseEntity.ok("Logged out");
     }
 
-    @GetMapping("/profile")
+    @GetMapping("/login/check")
     public ResponseEntity<ApiResponse<LoginResponse>> getUserProfile(HttpServletRequest request) {
         ApiResponse<LoginResponse> response = new ApiResponse<>();
         String token = jwtUtil.extractTokenFromCookie(request);
