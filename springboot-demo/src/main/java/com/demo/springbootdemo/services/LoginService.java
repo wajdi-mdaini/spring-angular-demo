@@ -44,16 +44,15 @@ public class LoginService {
         ApiResponse<LoginResponse> response = new ApiResponse<>();
         User loggedInUser = userController.login(loginRequest.getEmail(),loginRequest.getPassword());
         if( loggedInUser != null){
-            LoginResponse  loginResponse = new LoginResponse();
-            loginResponse.setUser(loggedInUser);
             if(loggedInUser.isLocked()) {
                 response.setData(null);
                 response.setStatus(HttpStatus.LOCKED);
                 response.setSuccess(false);
                 response.setMessageLabel("auth_signin_blocked_user_error_message");
             }else{
+                LoginResponse  loginResponse = new LoginResponse();
+                loginResponse.setUser(loggedInUser);
                 String jwtToken = jwtUtil.generateToken(loggedInUser.getEmail());
-                loginResponse.setToken(jwtToken);
                 response.setData(loginResponse);
                 response.setStatus(HttpStatus.OK);
                 response.setSuccess(true);
@@ -137,5 +136,38 @@ public class LoginService {
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+    }
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response) {
+        Cookie cookie = new Cookie("jwt", null);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setPath("/");
+        cookie.setMaxAge(0); // delete cookie
+        response.addCookie(cookie);
+        return ResponseEntity.ok("Logged out");
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<ApiResponse<LoginResponse>> getUserProfile(HttpServletRequest request) {
+        ApiResponse<LoginResponse> response = new ApiResponse<>();
+        String token = jwtUtil.extractTokenFromCookie(request);
+        if (token == null || !jwtUtil.validateToken(token)) {
+            response.setData(null);
+            response.setStatus(HttpStatus.UNAUTHORIZED);
+            response.setSuccess(false);
+            response.setMessageLabel("auth_profile_expired_error_message");
+            response.setDoLogout(true);
+        }else{
+            String email = jwtUtil.extractUsername(token);
+            User user = userController.getUserByEmail(email);
+            LoginResponse  loginResponse = new LoginResponse();
+            loginResponse.setUser(user);
+            response.setData(loginResponse);
+            response.setStatus(HttpStatus.OK);
+            response.setSuccess(true);
+            response.setShowToast(false);
+        }
+        return new ResponseEntity<>( response , response.getStatus());
     }
 }
