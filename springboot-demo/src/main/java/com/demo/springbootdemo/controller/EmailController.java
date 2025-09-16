@@ -52,7 +52,7 @@ public class EmailController {
         context.setVariable("name", user.getFirstname() + " " + user.getLastname());
         context.setVariable("code", generatedCode);
         context.setVariable("currentYear", new Date().getYear() + 1900);
-        context.setVariable("companyName", user.getCompany().getName().toUpperCase());
+        context.setVariable("companyName", user.getTeam().getCompany().getName().toUpperCase());
         context.setVariable("verificationExpireIn", verificationExpireIn);
 
         String subject = "WorkSync Platform - Password Reset Confirmation";

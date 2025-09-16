@@ -16,9 +16,9 @@ public class ManagerService {
     @Autowired
     private UserController userController;
 
-    @RequestMapping(path = "/add", method = RequestMethod.PUT)
-    public User addUser(@RequestBody User user) throws MessagingException {
-        userController.addUser(user);
-        return user;
-    }
+//    @RequestMapping(path = "/add", method = RequestMethod.PUT)
+//    public User addUser(@RequestBody User user) throws MessagingException {
+//        userController.addUser(user);
+//        return user;
+//    }
 }

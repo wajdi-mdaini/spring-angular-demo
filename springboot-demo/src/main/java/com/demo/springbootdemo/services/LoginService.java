@@ -5,6 +5,7 @@ import com.demo.springbootdemo.controller.CompanyController;
 import com.demo.springbootdemo.controller.UserController;
 import com.demo.springbootdemo.entity.Company;
 import com.demo.springbootdemo.entity.Role;
+import com.demo.springbootdemo.entity.Team;
 import com.demo.springbootdemo.entity.User;
 import com.demo.springbootdemo.model.*;
 import jakarta.mail.MessagingException;
@@ -78,16 +79,14 @@ public class LoginService {
     @RequestMapping(path = "/signup", method = RequestMethod.PUT)
     public ResponseEntity<ApiResponse<User>> signup(@RequestBody SignUpRequest signUpRequest) throws MessagingException {
         ApiResponse<User> response = new ApiResponse<>();
-        Company company = companyController.createCompany(signUpRequest.getCompany());
+        Company company = companyController.isCompanyExist(signUpRequest.getCompany());
         if(company == null){
             response.setStatus(HttpStatus.CONFLICT);
             response.setMessageLabel("auth_signup_used_company_name_error_message");
             response.setData(null);
             response.setSuccess(false);
         }else {
-            signUpRequest.getUser().setRole(Role.ADMIN);
-            signUpRequest.getUser().setCompany(company);
-            response = userController.addUser(signUpRequest.getUser());
+            response = userController.addUser(signUpRequest);
         }
         return new ResponseEntity<>( response , response.getStatus());
     }
@@ -105,8 +104,19 @@ public class LoginService {
     }
 
     @RequestMapping(path = "/changepassword", method = RequestMethod.POST)
-    public ResponseEntity<ApiResponse<Boolean>> ChangePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
-        ApiResponse<Boolean> response = userController.changePassword(changePasswordRequest);
+    public ResponseEntity<ApiResponse<Boolean>> ChangePassword(@RequestBody ChangePasswordRequest changePasswordRequest,
+                                                               HttpServletRequest request) {
+        String token = jwtUtil.extractTokenFromCookie(request);
+        ApiResponse<Boolean> response = new ApiResponse<>();
+        if (token == null || !jwtUtil.validateToken(token)) {
+            response.setData(null);
+            response.setStatus(HttpStatus.UNAUTHORIZED);
+            response.setSuccess(false);
+            response.setMessageLabel("auth_profile_expired_error_message");
+            response.setDoLogout(true);
+        }else {
+            response = userController.changePassword(changePasswordRequest);
+        }
         return new ResponseEntity<>( response , response.getStatus());
     }
 
@@ -161,12 +171,20 @@ public class LoginService {
         }else{
             String email = jwtUtil.extractUsername(token);
             User user = userController.getUserByEmail(email);
-            LoginResponse  loginResponse = new LoginResponse();
-            loginResponse.setUser(user);
-            response.setData(loginResponse);
-            response.setStatus(HttpStatus.OK);
-            response.setSuccess(true);
-            response.setShowToast(false);
+            if(user == null){
+                response.setData(null);
+                response.setStatus(HttpStatus.UNAUTHORIZED);
+                response.setSuccess(false);
+                response.setMessageLabel("auth_profile_expired_error_message");
+                response.setDoLogout(true);
+            }else{
+                LoginResponse  loginResponse = new LoginResponse();
+                loginResponse.setUser(user);
+                response.setData(loginResponse);
+                response.setStatus(HttpStatus.OK);
+                response.setSuccess(true);
+                response.setShowToast(false);
+            }
         }
         return new ResponseEntity<>( response , response.getStatus());
     }

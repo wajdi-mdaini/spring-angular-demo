@@ -5,39 +5,44 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
+
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 @Entity
 @Setter @Getter
+@Table(name = "`user`")
 public class User {
     @Id private String email;
     @JsonIgnore String password;
     private String firstname;
     private String lastname;
-    private LocalDate dateOfBirth;
-    private LocalDate  creationDate;
-    private LocalDate  lastPasswordResetDate;
+    private Long dateOfBirth;
+    private Long  creationDate;
+    private Long  lastPasswordResetDate;
     private boolean isFirstLogin;
     private boolean locked;
+    private String profilePictureUrl;
+
     private int attempts;
     private String verificationCode;
     @Enumerated(EnumType.STRING)
     private Role role;
 
     @ManyToOne
-    @JoinColumn(name = "manager_email")
-    private User manager;   // who is my manager?
+    @JoinColumn(name = "team")
+    private Team team;
 
     @OneToMany(mappedBy = "manager")
-    private List<User> employees = new ArrayList<>();
+    private List<Team> teams = new ArrayList<>();
 
-    @ManyToOne
-    @JoinColumn(name = "company", nullable = false)
-    private Company company;   // what is my company?
+    @OneToMany(mappedBy = "from")
+    @JsonIgnore
+    private List<Notification> notificationsFrom = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user")
-    private List<Notification> notifications = new ArrayList<>();
+    @OneToMany(mappedBy = "to")
+    @JsonIgnore
+    private List<Notification> notificationsTo = new ArrayList<>();
 }

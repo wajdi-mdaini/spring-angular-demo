@@ -20,10 +20,17 @@ public class Company {
     private String email;
     private Long phone;
     private String website;
-    @OneToMany(mappedBy = "company", fetch = FetchType.LAZY)
+    @OneToOne
     @JsonIgnore
-    List<User> users = new ArrayList<>();
+    private User companyCreator;
+    @OneToMany(mappedBy = "company")
+    @JsonIgnore
+    List<Team> teams = new ArrayList<>();
 
     @OneToMany(mappedBy = "company")
     List<Branding> branding = new ArrayList<>();
+
+    public void setTeams(Team team) {
+        this.teams.add(team);
+    }
 }
