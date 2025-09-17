@@ -17,17 +17,34 @@ public class CloudinaryController {
         this.cloudinary = cloudinary;
     }
 
-    public String uploadProfilePicture(MultipartFile file) throws IOException {
+    public Map<String, String> uploadProfilePicture(MultipartFile file) throws IOException {
         Map uploadResult = cloudinary.uploader().upload(
                 file.getBytes(),
                 ObjectUtils.asMap("folder", "users profile pictures"));
-        return uploadResult.get("secure_url").toString();
+        String url = uploadResult.get("secure_url").toString();
+        String publicId = uploadResult.get("public_id").toString();
+
+        return Map.of(
+                "url", url,
+                "publicId", publicId
+        );
     }
 
-    public String uploadCompanyLogo(MultipartFile file) throws IOException {
+    public Map<String, String> uploadCompanyLogo(MultipartFile file) throws IOException {
         Map uploadResult = cloudinary.uploader().upload(
                 file.getBytes(),
                 ObjectUtils.asMap("folder", "companies logo"));
-        return uploadResult.get("secure_url").toString();
+        String url = uploadResult.get("secure_url").toString();
+        String publicId = uploadResult.get("public_id").toString();
+
+        return Map.of(
+                "url", url,
+                "publicId", publicId
+        );
+    }
+
+    public void deleteFile(String publicId) throws IOException {
+        if (publicId == null || publicId.isEmpty()) return;
+        cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
     }
 }

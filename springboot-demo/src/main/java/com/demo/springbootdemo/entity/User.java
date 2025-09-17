@@ -25,7 +25,7 @@ public class User {
     private boolean isFirstLogin;
     private boolean locked;
     private String profilePictureUrl;
-
+    private String profilePicturePublicId;
     private int attempts;
     private String verificationCode;
     @Enumerated(EnumType.STRING)

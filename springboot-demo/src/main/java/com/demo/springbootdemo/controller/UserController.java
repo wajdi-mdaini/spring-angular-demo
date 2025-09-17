@@ -1,19 +1,18 @@
 package com.demo.springbootdemo.controller;
 
 import com.demo.springbootdemo.configuration.PasswordGenerator;
-import com.demo.springbootdemo.configuration.SchedulerConfig;
 import com.demo.springbootdemo.entity.*;
 import com.demo.springbootdemo.model.ApiResponse;
 import com.demo.springbootdemo.model.ChangePasswordRequest;
 import com.demo.springbootdemo.model.SignUpRequest;
-import com.demo.springbootdemo.repository.TeamRepository;
 import com.demo.springbootdemo.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -21,7 +20,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.Date;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +46,9 @@ public class UserController implements UserDetailsService {
     @Autowired
     private NotificationController notificationController;
 
+    @Autowired
+    private WebSocketService webSocketService;
+
     @Value("${app.shared.verification-code-expire-in}")
     private long verificationExpireIn;
 
@@ -56,13 +57,12 @@ public class UserController implements UserDetailsService {
 
     private ScheduledFuture<?> futureTask;
 
-    private final ThreadPoolTaskScheduler scheduler;
+    @Autowired
+    @Qualifier("verificationCodeScheduler")
+    private ThreadPoolTaskScheduler scheduler;
 
     private User authUser;
 
-    public UserController(ThreadPoolTaskScheduler scheduler) {
-        this.scheduler = scheduler;
-    }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -226,7 +226,7 @@ public class UserController implements UserDetailsService {
                     notification.setAt(new Date().getTime());
                     notification.setTitleLabel("notification_new_joiner_title");
                     notification.setMessageLabel("notification_new_joiner_message");
-                    notificationController.saveNotification(notification);
+                    webSocketService.sendNotification(notificationController.saveNotification(notification));
                 }
                 authUser.setFirstLogin(false);
             }

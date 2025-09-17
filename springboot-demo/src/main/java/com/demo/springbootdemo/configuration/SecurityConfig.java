@@ -33,7 +33,6 @@ public class SecurityConfig {
                         .requestMatchers("/company/**").hasRole("ADMIN")
                         .requestMatchers("/management/**").hasAnyRole("ADMIN","MANAGER")
                         .requestMatchers("/employee/**").permitAll()
-                        .requestMatchers("/notification/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
