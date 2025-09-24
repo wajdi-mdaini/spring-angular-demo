@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -60,8 +62,6 @@ public class UserController implements UserDetailsService {
     @Autowired
     @Qualifier("verificationCodeScheduler")
     private ThreadPoolTaskScheduler scheduler;
-
-    private User authUser;
 
 
     @Override
@@ -128,7 +128,6 @@ public class UserController implements UserDetailsService {
         if(user != null){
             boolean matches = passwordEncoder.matches(password, user.getPassword());
             if (matches) {
-                if(user.isFirstLogin()) authUser = user;
                 return user;
             } else {
                 user.setAttempts(user.getAttempts() + 1);
@@ -171,7 +170,6 @@ public class UserController implements UserDetailsService {
             String code = passwordGenerator.generateCode();
             user.setVerificationCode(code);
             userRepository.save(user);
-            authUser = user;
             scheduleAttributeChange(user);
             emailController.sendResetPasswordConfirmationEmail(email, code, user, verificationExpireIn);
             response.setStatus(HttpStatus.OK);
@@ -184,6 +182,8 @@ public class UserController implements UserDetailsService {
 
     public ApiResponse<Boolean> resetPasswordCodeCheck(String code) {
         ApiResponse<Boolean> response = new ApiResponse<>();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User authUser = getUserByEmail(authentication.getPrincipal().toString());
         if(authUser == null){
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
             response.setMessageLabel("error_status_INTERNAL_SERVER_ERROR");
@@ -208,6 +208,8 @@ public class UserController implements UserDetailsService {
 
     public ApiResponse<Boolean> changePassword(ChangePasswordRequest changePasswordRequest) {
         ApiResponse<Boolean> response = new ApiResponse<>();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User authUser = getUserByEmail(authentication.getPrincipal().toString());
         if(authUser == null){
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
             response.setMessageLabel("error_status_INTERNAL_SERVER_ERROR");

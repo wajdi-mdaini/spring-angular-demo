@@ -12,6 +12,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,11 +22,11 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping(path = "/employee")
-public class EmployeeService {
+@RequestMapping(path = "/public")
+public class PublicService {
 
     private final JwtUtil jwtUtil;
-    public EmployeeService(JwtUtil jwtUtil) {
+    public PublicService(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
     }
     @Autowired
@@ -38,7 +40,6 @@ public class EmployeeService {
 
     @PostMapping("/upload-profile")
     public ResponseEntity<ApiResponse<User>> uploadProfilePicture(@RequestParam("file") MultipartFile file,
-                                                                  @RequestParam("email") String email,
                                                                   HttpServletRequest request) {
         String token = jwtUtil.extractTokenFromCookie(request);
         ApiResponse<User> response = new ApiResponse<>();
@@ -48,7 +49,8 @@ public class EmployeeService {
             response.setSuccess(false);
             response.setMessageLabel("auth_profile_expired_error_message");
         }else{
-            User user = userController.getUserByEmail(email);
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            User user = userController.getUserByEmail(authentication.getPrincipal().toString());
             if(user == null){
                 response.setData(null);
                 response.setStatus(HttpStatus.UNAUTHORIZED);
@@ -82,6 +84,7 @@ public class EmployeeService {
 
     @GetMapping("/notifications")
     public ResponseEntity<ApiResponse<List<NotificationDTO>>> getNotifications(@RequestParam("email") String email,
+                                                                               @RequestParam("all") boolean isAll,
                                                                                HttpServletRequest request) {
         String token = jwtUtil.extractTokenFromCookie(request);
         ApiResponse<List<NotificationDTO>> response = new ApiResponse<>();
@@ -99,7 +102,8 @@ public class EmployeeService {
                 response.setMessageLabel("auth_profile_expired_error_message");
                 response.setDoLogout(true);
             }else {
-                List<Notification> notifications = notificationController.getNotificationsByUserTo(user);
+                List<Notification> notifications = isAll ? notificationController.getAllNotificationsByUserTo(user) :
+                        notificationController.getLimitedNotificationsByUserTo(user);
                 List<NotificationDTO> dtoList = new ArrayList<>();
                 for(Notification notification : notifications){
                     NotificationDTO dto = new NotificationDTO();
@@ -120,5 +124,78 @@ public class EmployeeService {
             }
         }
         return new ResponseEntity<>( response , response.getStatus());
+    }
+
+    @PostMapping(path = "/setnotificationsstatus")
+    public ApiResponse<?> setNotificationsReadStatus(@RequestBody List<NotificationDTO> notificationsDTO) {
+        ApiResponse<?> response = new ApiResponse<>();
+        for(NotificationDTO notificationDTO : notificationsDTO){
+            Notification notification = notificationController.getNotificationsById(notificationDTO.getId());
+            if(notification == null){
+                response.setData(null);
+                response.setStatus(HttpStatus.UNAUTHORIZED);
+                response.setSuccess(false);
+                response.setShowToast(false);
+                break;
+            }else{
+                notification.setRead(true);
+                notificationController.saveNotification(notification);
+                response.setStatus(HttpStatus.OK);
+                response.setShowToast(false);
+                response.setSuccess(true);
+            }
+        }
+        return response;
+    }
+
+    @GetMapping(path = "/getnotificationdetails")
+    public ApiResponse<Notification> getNotificationDetails(@RequestParam("id") Long id) {
+        ApiResponse<Notification> response = new ApiResponse<>();
+            Notification notification = notificationController.getNotificationsById(id);
+            if(notification == null){
+                response.setData(null);
+                response.setStatus(HttpStatus.UNAUTHORIZED);
+                response.setSuccess(false);
+            }else{
+                response.setData(notification);
+                response.setStatus(HttpStatus.OK);
+                response.setShowToast(false);
+                response.setSuccess(true);
+            }
+        return response;
+    }
+
+    @GetMapping(path = "/getprofiledetails")
+    public ApiResponse<User> getProfileDetails(@RequestParam("email") String email) {
+        ApiResponse<User> response = new ApiResponse<>();
+        User user = userController.getUserByEmail(email);
+        if(user == null){
+            response.setData(null);
+            response.setStatus(HttpStatus.UNAUTHORIZED);
+            response.setSuccess(false);
+        }else{
+            response.setData(user);
+            response.setStatus(HttpStatus.OK);
+            response.setShowToast(false);
+            response.setSuccess(true);
+        }
+        return response;
+    }
+
+    @GetMapping(path = "/checkCurrentPassword")
+    public ApiResponse<Boolean> checkCurrentPassword(@RequestParam("password") String password,
+                                                     @RequestParam("email") String email) {
+        ApiResponse<Boolean> response = new ApiResponse<>();
+        User user = userController.login(email,password);
+        if(user == null){
+            response.setStatus(HttpStatus.OK);
+            response.setShowToast(false);
+            response.setSuccess(false);
+        }else{
+            response.setStatus(HttpStatus.OK);
+            response.setShowToast(false);
+            response.setSuccess(true);
+        }
+        return response;
     }
 }

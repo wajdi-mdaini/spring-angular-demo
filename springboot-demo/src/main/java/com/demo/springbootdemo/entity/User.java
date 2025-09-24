@@ -28,6 +28,12 @@ public class User {
     private String profilePicturePublicId;
     private int attempts;
     private String verificationCode;
+    private String degree;
+    private String address;
+    private String city;
+    private String country;
+    private String postCode;
+    private String title;
     @Enumerated(EnumType.STRING)
     private Role role;
 
