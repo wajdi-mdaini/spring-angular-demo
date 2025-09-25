@@ -5,9 +5,9 @@ import com.demo.springbootdemo.controller.CloudinaryController;
 import com.demo.springbootdemo.controller.NotificationController;
 import com.demo.springbootdemo.controller.UserController;
 import com.demo.springbootdemo.entity.Notification;
+import com.demo.springbootdemo.entity.Team;
 import com.demo.springbootdemo.entity.User;
-import com.demo.springbootdemo.model.ApiResponse;
-import com.demo.springbootdemo.model.NotificationDTO;
+import com.demo.springbootdemo.model.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -165,23 +165,6 @@ public class PublicService {
         return response;
     }
 
-    @GetMapping(path = "/getprofiledetails")
-    public ApiResponse<User> getProfileDetails(@RequestParam("email") String email) {
-        ApiResponse<User> response = new ApiResponse<>();
-        User user = userController.getUserByEmail(email);
-        if(user == null){
-            response.setData(null);
-            response.setStatus(HttpStatus.UNAUTHORIZED);
-            response.setSuccess(false);
-        }else{
-            response.setData(user);
-            response.setStatus(HttpStatus.OK);
-            response.setShowToast(false);
-            response.setSuccess(true);
-        }
-        return response;
-    }
-
     @GetMapping(path = "/checkCurrentPassword")
     public ApiResponse<Boolean> checkCurrentPassword(@RequestParam("password") String password,
                                                      @RequestParam("email") String email) {
@@ -195,6 +178,75 @@ public class PublicService {
             response.setStatus(HttpStatus.OK);
             response.setShowToast(false);
             response.setSuccess(true);
+        }
+        return response;
+    }
+
+    @GetMapping(path = "/teammembers")
+    public ApiResponse<TeamDetailsResponse> getTeamMembers(HttpServletRequest request) {
+        ApiResponse<TeamDetailsResponse> response = new ApiResponse<>();
+        String token = jwtUtil.extractTokenFromCookie(request);
+        if (token == null || !jwtUtil.validateToken(token)) {
+            response.setData(null);
+            response.setStatus(HttpStatus.UNAUTHORIZED);
+            response.setSuccess(false);
+            response.setMessageLabel("auth_profile_expired_error_message");
+            response.setDoLogout(true);
+        }else{
+            String email = jwtUtil.extractUsername(token);
+            User user = userController.getUserByEmail(email);
+            if(user == null){
+                response.setData(null);
+                response.setStatus(HttpStatus.UNAUTHORIZED);
+                response.setSuccess(false);
+                response.setMessageLabel("auth_profile_expired_error_message");
+                response.setDoLogout(true);
+            }else{
+                TeamDetailsResponse teamDetailsResponse= new TeamDetailsResponse();
+                teamDetailsResponse.setTeamManager(user.getTeam().getManager());
+                teamDetailsResponse.setMembers(user.getTeam().getMembers());
+                response.setData(teamDetailsResponse);
+                response.setStatus(HttpStatus.OK);
+                response.setSuccess(true);
+                response.setShowToast(false);
+            }
+        }
+        return response;
+    }
+
+    @PostMapping(path = "/editprofile")
+    public ApiResponse<User> editProfile(@RequestBody EditProfileRequest profileRequest,HttpServletRequest request) {
+        ApiResponse<User> response = new ApiResponse<>();
+        String token = jwtUtil.extractTokenFromCookie(request);
+        if (token == null || !jwtUtil.validateToken(token)) {
+            response.setData(null);
+            response.setStatus(HttpStatus.UNAUTHORIZED);
+            response.setSuccess(false);
+            response.setMessageLabel("auth_profile_expired_error_message");
+            response.setDoLogout(true);
+        }else{
+            User user = userController.getUserByEmail(profileRequest.getEmail());
+            if(user == null){
+                response.setData(null);
+                response.setStatus(HttpStatus.UNAUTHORIZED);
+                response.setSuccess(false);
+                response.setMessageLabel("auth_profile_expired_error_message");
+                response.setDoLogout(true);
+            }else{
+                user.setAddress(profileRequest.getAddress());
+                user.setCity(profileRequest.getCity());
+                user.setCountry(profileRequest.getCountry());
+                user.setDateOfBirth(profileRequest.getDateOfBirth().getTime());
+                user.setDegree(profileRequest.getDegree());
+                user.setFirstname(profileRequest.getFirstname());
+                user.setLastname(profileRequest.getLastname());
+                user.setPostCode(profileRequest.getPostCode());
+                user.setTitle(profileRequest.getTitle());
+                response.setData(userController.setUser(user));
+                response.setStatus(HttpStatus.OK);
+                response.setSuccess(true);
+                response.setMessageLabel("manage_profile_edit_profile_done");
+            }
         }
         return response;
     }
