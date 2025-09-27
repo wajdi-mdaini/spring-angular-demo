@@ -78,11 +78,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         }
-
         if (token != null && jwtUtil.validateToken(token)) {
             String username = jwtUtil.extractUsername(token);
+            com.demo.springbootdemo.entity.User userDetails = userRepository.findByEmail(username);
+            var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + userDetails.getRole().name()));
+
             UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(username, null, List.of());
+                    new UsernamePasswordAuthenticationToken(username, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(auth);
         }
 

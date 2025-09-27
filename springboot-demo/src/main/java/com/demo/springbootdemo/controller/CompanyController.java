@@ -1,8 +1,10 @@
 package com.demo.springbootdemo.controller;
 
 import com.demo.springbootdemo.entity.Company;
+import com.demo.springbootdemo.model.ApiResponse;
 import com.demo.springbootdemo.repository.CompanyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,9 +24,39 @@ public class CompanyController {
         return company;
     }
 
-    public Company setCompany(Company company){
-        Optional<Company> companyRepositoryById = companyRepository.findById(company.getId());
-        return companyRepository.save(company);
+    public ApiResponse<Company> setCompany(Company company){
+        ApiResponse<Company> response = new ApiResponse<>();
+        Company companyById = companyRepository.findById(company.getId()).orElse(null);
+        if(companyById == null){
+            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+            response.setMessageLabel("error_status_INTERNAL_SERVER_ERROR");
+            response.setSuccess(false);
+            response.setDoLogout(true);
+        }else{
+            if(!companyById.getName().equals(company.getName())){
+                Company existingCompany = isCompanyExist(company);
+                if(existingCompany == null){
+                    response.setStatus(HttpStatus.CONFLICT);
+                    response.setMessageLabel("auth_signup_used_company_name_error_message");
+                    response.setData(null);
+                    response.setSuccess(false);
+                }else{
+                    response = changeCompanyDetails(company);
+                }
+            }else{
+                response = changeCompanyDetails(company);
+            }
+        }
+        return response;
+    }
+
+    private ApiResponse<Company> changeCompanyDetails(Company company){
+        ApiResponse<Company> response = new ApiResponse<>();
+        response.setStatus(HttpStatus.OK);
+        response.setMessageLabel("manage_company_edit_success_message");
+        response.setData(companyRepository.save(company));
+        response.setSuccess(true);
+        return response;
     }
 
     public Company saveCompany(Company company){
