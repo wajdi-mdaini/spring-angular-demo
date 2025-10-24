@@ -1,12 +1,15 @@
 package com.demo.springbootdemo.controller;
 
 import com.demo.springbootdemo.entity.Company;
+import com.demo.springbootdemo.entity.Team;
 import com.demo.springbootdemo.model.ApiResponse;
 import com.demo.springbootdemo.repository.CompanyRepository;
+import com.demo.springbootdemo.repository.TeamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,6 +18,9 @@ public class CompanyController {
 
     @Autowired
     private CompanyRepository companyRepository;
+
+    @Autowired
+    private TeamRepository teamRepository;
 
     public Company isCompanyExist(Company company){
         boolean isExist = companyRepository.findByNameIgnoreCase(company.getName().trim()).isEmpty();
@@ -59,7 +65,15 @@ public class CompanyController {
         return response;
     }
 
+    public List<Team> getTeams(Company company){
+        return teamRepository.findByCompany(company);
+    }
+
     public Company saveCompany(Company company){
         return  companyRepository.save(company);
+    }
+
+    public Team saveTeam(Team team) {
+        return teamRepository.save(team);
     }
 }

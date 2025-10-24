@@ -23,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -248,5 +249,41 @@ public class UserController implements UserDetailsService {
         });
     }
 
+    public List<User> getAllEmployees(){
+        return userRepository.findByRoleAndTeamIsNull(Role.EMPLOYEE);
+    }
+
+    public Team emptyUserTeam(List<String> remainingUsers, Team team) {
+        if (team == null || team.getMembers() == null || remainingUsers == null) {
+            return null;
+        }
+
+        // Remove all users in remainingUsers from the team's user list
+        team.getMembers().removeAll(remainingUsers);
+        teamController.saveTeam(team);
+
+        // Also clear the team reference inside each removed user
+        for (String userEmail : remainingUsers) {
+            User user = userRepository.findByEmail(userEmail);
+            if (user.getTeam() != null && user.getTeam().equals(team)) {
+                user.setTeam(null);
+                user.getTeams().remove(team);
+                userRepository.save(user);
+            }
+        }
+        return team;
+    }
+
+    public void setUserTeam(List<String> teamMembers, Team team) {
+        for (String userEmail : teamMembers) {
+            User user = userRepository.findByEmail(userEmail);
+            user.setTeam(team);
+            if(user.equals(team.getManager()) &&
+               !user.getTeams().contains(team)){
+                user.setTeams(team);
+            }
+            userRepository.save(user);
+        }
+    }
 }
 

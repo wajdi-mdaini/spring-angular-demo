@@ -3,6 +3,7 @@ package com.demo.springbootdemo.services;
 import com.demo.springbootdemo.configuration.JwtUtil;
 import com.demo.springbootdemo.controller.CompanyController;
 import com.demo.springbootdemo.entity.Company;
+import com.demo.springbootdemo.entity.Team;
 import com.demo.springbootdemo.model.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping(path = "/company")
