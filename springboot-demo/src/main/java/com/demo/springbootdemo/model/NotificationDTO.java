@@ -12,6 +12,7 @@ public class NotificationDTO {
     String fromName;
     String fromId;
     String fromProfilePictureUrl;
+    String toEmail;
     Boolean read;
 
 }

@@ -28,9 +28,13 @@ public class Company {
     List<Team> teams = new ArrayList<>();
 
     @OneToMany(mappedBy = "company")
+    @JsonIgnore
+    List<User> members = new ArrayList<>();
+
+    @OneToMany(mappedBy = "company")
     List<Branding> branding = new ArrayList<>();
 
-    public void setTeams(Team team) {
-        this.teams.add(team);
+    public void setMembers(User member) {
+        this.members.add(member);
     }
 }

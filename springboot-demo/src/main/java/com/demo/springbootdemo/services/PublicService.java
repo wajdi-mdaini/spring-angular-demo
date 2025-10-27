@@ -2,8 +2,10 @@ package com.demo.springbootdemo.services;
 
 import com.demo.springbootdemo.configuration.JwtUtil;
 import com.demo.springbootdemo.controller.CloudinaryController;
+import com.demo.springbootdemo.controller.CompanyController;
 import com.demo.springbootdemo.controller.NotificationController;
 import com.demo.springbootdemo.controller.UserController;
+import com.demo.springbootdemo.entity.Company;
 import com.demo.springbootdemo.entity.Notification;
 import com.demo.springbootdemo.entity.Team;
 import com.demo.springbootdemo.entity.User;
@@ -37,6 +39,9 @@ public class PublicService {
 
     @Autowired
     private CloudinaryController cloudinaryController;
+
+    @Autowired
+    private CompanyController companyController;
 
     @PostMapping("/upload-profile")
     public ResponseEntity<ApiResponse<User>> uploadProfilePicture(@RequestParam("file") MultipartFile file,
@@ -203,8 +208,13 @@ public class PublicService {
                 response.setDoLogout(true);
             }else{
                 TeamDetailsResponse teamDetailsResponse= new TeamDetailsResponse();
-                teamDetailsResponse.setTeamManager(user.getTeam().getManager());
-                teamDetailsResponse.setMembers(user.getTeam().getMembers());
+                if(user.getTeam() != null && user.getTeam().getManager() != null) {
+                    teamDetailsResponse.setTeamManager(user.getTeam().getManager());
+                    teamDetailsResponse.setMembers(user.getTeam().getMembers());
+                }else{
+                    Company company = companyController.getMembersByUser(user);
+                    teamDetailsResponse.setTeamManager(company.getCompanyCreator());
+                }
                 response.setData(teamDetailsResponse);
                 response.setStatus(HttpStatus.OK);
                 response.setSuccess(true);

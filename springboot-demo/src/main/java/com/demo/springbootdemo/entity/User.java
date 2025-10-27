@@ -37,6 +37,10 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @ManyToOne()
+    @JoinColumn(name = "company", nullable = false)
+    private Company company;
+
     @ManyToOne
     @JoinColumn(name = "team")
     private Team team;

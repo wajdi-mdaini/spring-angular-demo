@@ -2,6 +2,7 @@ package com.demo.springbootdemo.controller;
 
 import com.demo.springbootdemo.entity.Company;
 import com.demo.springbootdemo.entity.Team;
+import com.demo.springbootdemo.entity.User;
 import com.demo.springbootdemo.model.ApiResponse;
 import com.demo.springbootdemo.repository.CompanyRepository;
 import com.demo.springbootdemo.repository.TeamRepository;
@@ -75,5 +76,9 @@ public class CompanyController {
 
     public Team saveTeam(Team team) {
         return teamRepository.save(team);
+    }
+
+    public Company getMembersByUser(User authUser) {
+        return companyRepository.findByMembersContains(authUser);
     }
 }

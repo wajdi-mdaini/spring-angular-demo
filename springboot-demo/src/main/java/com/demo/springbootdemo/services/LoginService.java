@@ -45,15 +45,17 @@ public class LoginService {
                                                             HttpServletResponse httpResponse) {
         ApiResponse<LoginResponse> response = new ApiResponse<>();
         User loggedInUser = userController.login(loginRequest.getEmail(),loginRequest.getPassword());
-        if( loggedInUser != null){
+        Company company = companyController.getMembersByUser(loggedInUser);
+        if( loggedInUser != null && company != null){
             if(loggedInUser.isLocked()) {
                 response.setData(null);
                 response.setStatus(HttpStatus.LOCKED);
                 response.setSuccess(false);
                 response.setMessageLabel("auth_signin_blocked_user_error_message");
             }else{
-                LoginResponse  loginResponse = new LoginResponse();
+                LoginResponse loginResponse = new LoginResponse();
                 loginResponse.setUser(loggedInUser);
+                loginResponse.setCompany(company);
                 String jwtToken = jwtUtil.generateToken(loggedInUser.getEmail());
                 response.setData(loginResponse);
                 response.setStatus(HttpStatus.OK);
@@ -172,7 +174,14 @@ public class LoginService {
         }else{
             String email = jwtUtil.extractUsername(token);
             User user = userController.getUserByEmail(email);
-            if(user == null){
+            Company company = companyController.getMembersByUser(user);
+            if(company == null){
+                response.setData(null);
+                response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+                response.setMessageLabel("error_status_INTERNAL_SERVER_ERROR");
+                response.setSuccess(false);
+                response.setShowToast(false);
+            }else if(user == null){
                 response.setData(null);
                 response.setStatus(HttpStatus.UNAUTHORIZED);
                 response.setSuccess(false);
@@ -181,6 +190,7 @@ public class LoginService {
             }else{
                 LoginResponse  loginResponse = new LoginResponse();
                 loginResponse.setUser(user);
+                loginResponse.setCompany(company);
                 response.setData(loginResponse);
                 response.setStatus(HttpStatus.OK);
                 response.setSuccess(true);

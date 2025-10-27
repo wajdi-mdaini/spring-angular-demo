@@ -83,30 +83,20 @@ public class UserController implements UserDetailsService {
         }else {
             User user = signUpRequest.getUser();
             Company company = signUpRequest.getCompany();
-            Team adminTeam = new Team();
-            adminTeam.setName("Administration");
-            adminTeam.setDescription("Administration team");
-            adminTeam = teamController.saveTeam(adminTeam);
 
             company = companyController.saveCompany(company);
-
+            user.setCompany(company);
             user.setRole(Role.ADMIN);
             user.setFirstLogin(true);
             user.setLocked(false);
             user.setAttempts(0);
             user.setCreationDate(new Date().getTime());
+            user.setProfilePictureUrl("assets/img/default_profile_picture.png");
             String generatedPassword = passwordGenerator.generateStrongPassword();
             user.setPassword(passwordEncoder.encode(generatedPassword)); // hash the password
-            user.setTeam(adminTeam);
             user = userRepository.save(user);
-
-            adminTeam.setManager(user);
-            adminTeam.setCompany(company);
-            adminTeam.setMembers(user);
-            teamController.saveTeam(adminTeam);
-
+            company.setMembers(user);
             company.setCompanyCreator(user);
-            company.setTeams(adminTeam);
             companyController.saveCompany(company);
 
             emailController.sendWelcomePasswordEmail(
@@ -222,15 +212,20 @@ public class UserController implements UserDetailsService {
             authUser.setAttempts(0);
             authUser.setLastPasswordResetDate(new Date().getTime());
             if(authUser.isFirstLogin()) {
-                if(authUser.getTeam().getManager() != null){
-                    Notification notification = new Notification();
+                Notification notification = new Notification();
+                notification.setFrom(authUser);
+                notification.setAt(new Date().getTime());
+                notification.setTitleLabel("notification_new_joiner_title");
+                notification.setMessageLabel("notification_new_joiner_message");
+                if(authUser.getTeam() != null && authUser.getTeam().getManager() != null)
                     notification.setTo(authUser.getTeam().getManager());
-                    notification.setFrom(authUser);
-                    notification.setAt(new Date().getTime());
-                    notification.setTitleLabel("notification_new_joiner_title");
-                    notification.setMessageLabel("notification_new_joiner_message");
-                    webSocketService.sendNotification(notificationController.saveNotification(notification));
+                else {
+//                  send notification to company creator
+                    Company authUserCompany = companyController.getMembersByUser(authUser);
+                    notification.setTo(authUserCompany.getCompanyCreator());
                 }
+                notification = notificationController.saveNotification(notification);
+                webSocketService.sendNotification(notification);
                 authUser.setFirstLogin(false);
             }
             userRepository.save(authUser);
@@ -258,32 +253,62 @@ public class UserController implements UserDetailsService {
             return null;
         }
 
-        // Remove all users in remainingUsers from the team's user list
-        team.getMembers().removeAll(remainingUsers);
-        teamController.saveTeam(team);
-
-        // Also clear the team reference inside each removed user
+        // Clear the team reference inside each removed user
         for (String userEmail : remainingUsers) {
             User user = userRepository.findByEmail(userEmail);
             if (user.getTeam() != null && user.getTeam().equals(team)) {
                 user.setTeam(null);
+                if(!user.getRole().equals(Role.ADMIN)){
+                    user.setRole(Role.EMPLOYEE);
+                }
                 user.getTeams().remove(team);
                 userRepository.save(user);
             }
         }
+        // Also remove all users in remainingUsers from the team's user list
+        team.getMembers().removeAll(remainingUsers);
+        teamController.saveTeam(team);
+
         return team;
     }
 
     public void setUserTeam(List<String> teamMembers, Team team) {
         for (String userEmail : teamMembers) {
             User user = userRepository.findByEmail(userEmail);
+            team.setMembers(user);
             user.setTeam(team);
             if(user.equals(team.getManager()) &&
                !user.getTeams().contains(team)){
                 user.setTeams(team);
+            }else if(!user.equals(team.getManager())) {
+                if(!user.getRole().equals(Role.ADMIN)) {
+                    user.setRole(Role.EMPLOYEE);
+                }
             }
             userRepository.save(user);
         }
+        teamController.saveTeam(team);
+    }
+
+    public void addUsersToTeam(List<String> teamMembers, Team team) {
+        for (String userEmail : teamMembers) {
+            User user = userRepository.findByEmail(userEmail);
+            team.setMembers(user);
+            user.setTeam(team);
+            if(user.equals(team.getManager())){
+                user.setTeams(team);
+            }else{
+                if(!user.getRole().equals(Role.ADMIN)) {
+                    user.setRole(Role.EMPLOYEE);
+                }
+            }
+            userRepository.save(user);
+        }
+        teamController.saveTeam(team);
+    }
+
+    public User save(User user) {
+        return userRepository.save(user);
     }
 }
 

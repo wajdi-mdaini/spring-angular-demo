@@ -24,6 +24,7 @@ public class WebSocketService {
         dto.setFromName(notification.getFrom().getFirstname() + " " + notification.getFrom().getLastname());
         dto.setFromId(notification.getFrom().getEmail());
         dto.setFromProfilePictureUrl(notification.getFrom().getProfilePictureUrl());
+        dto.setToEmail(notification.getTo().getEmail());
 
         messagingTemplate.convertAndSend("/topic/notifications", dto);
     }

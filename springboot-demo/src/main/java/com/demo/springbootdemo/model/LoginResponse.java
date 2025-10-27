@@ -1,6 +1,7 @@
 package com.demo.springbootdemo.model;
 
 
+import com.demo.springbootdemo.entity.Company;
 import com.demo.springbootdemo.entity.User;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,4 +9,5 @@ import lombok.Setter;
 @Setter @Getter
 public class LoginResponse {
     User user;
+    Company company;
 }

@@ -2,12 +2,16 @@ package com.demo.springbootdemo.services;
 
 import com.demo.springbootdemo.configuration.JwtUtil;
 import com.demo.springbootdemo.controller.CompanyController;
+import com.demo.springbootdemo.controller.TeamController;
 import com.demo.springbootdemo.controller.UserController;
 import com.demo.springbootdemo.entity.Company;
+import com.demo.springbootdemo.entity.Role;
 import com.demo.springbootdemo.entity.Team;
 import com.demo.springbootdemo.entity.User;
+import com.demo.springbootdemo.model.AddTeamRequest;
 import com.demo.springbootdemo.model.ApiResponse;
 import com.demo.springbootdemo.model.EditTeamRequest;
+import com.demo.springbootdemo.model.TeamDetailsResponse;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,6 +36,9 @@ public class ManagerService {
 
     @Autowired
     private UserController userController;
+
+    @Autowired
+    private TeamController teamController;
 
 //    @RequestMapping(path = "/add", method = RequestMethod.PUT)
 //    public User addUser(@RequestBody User user) throws MessagingException {
@@ -91,6 +98,10 @@ public class ManagerService {
             response.setDoLogout(true);
         }else {
             User manager = userController.getUserByEmail(editTeamRequest.getManagerEmail());
+            if(!manager.getRole().equals(Role.ADMIN)){
+                manager.setRole(Role.MANAGER);
+            }
+            manager = userController.save(manager);
             Team team = editTeamRequest.getTeam();
             team.setManager(manager);
             team = companyController.saveTeam(team);
@@ -104,4 +115,103 @@ public class ManagerService {
         return new ResponseEntity<>( response , response.getStatus());
     }
 
-}
+    @GetMapping(path = "/teammembers")
+    public ApiResponse<List<User>> getTeamMembers(@RequestParam("id")Long idTeam, HttpServletRequest request) {
+        ApiResponse<List<User>> response = new ApiResponse<>();
+        String token = jwtUtil.extractTokenFromCookie(request);
+        if (token == null || !jwtUtil.validateToken(token)) {
+            response.setData(null);
+            response.setStatus(HttpStatus.UNAUTHORIZED);
+            response.setSuccess(false);
+            response.setMessageLabel("auth_profile_expired_error_message");
+            response.setDoLogout(true);
+        }else{
+            String email = jwtUtil.extractUsername(token);
+            User user = userController.getUserByEmail(email);
+            if(user == null){
+                response.setData(null);
+                response.setStatus(HttpStatus.UNAUTHORIZED);
+                response.setSuccess(false);
+                response.setMessageLabel("auth_profile_expired_error_message");
+                response.setDoLogout(true);
+            }else{
+                List<User> users = teamController.getTeamMembers(idTeam);
+                response.setData(users);
+                response.setStatus(HttpStatus.OK);
+                response.setSuccess(true);
+                response.setShowToast(false);
+            }
+        }
+        return response;
+    }
+
+    @PutMapping(path = "/addteam")
+    public ApiResponse<Team> addTeam(@RequestBody() AddTeamRequest addTeamRequest, HttpServletRequest request) {
+        ApiResponse<Team> response = new ApiResponse<>();
+        String token = jwtUtil.extractTokenFromCookie(request);
+        if (token == null || !jwtUtil.validateToken(token)) {
+            response.setData(null);
+            response.setStatus(HttpStatus.UNAUTHORIZED);
+            response.setSuccess(false);
+            response.setMessageLabel("auth_profile_expired_error_message");
+            response.setDoLogout(true);
+        }else{
+            String email = jwtUtil.extractUsername(token);
+            User user = userController.getUserByEmail(email);
+            if(user == null){
+                response.setData(null);
+                response.setStatus(HttpStatus.UNAUTHORIZED);
+                response.setSuccess(false);
+                response.setMessageLabel("auth_profile_expired_error_message");
+                response.setDoLogout(true);
+            }else{
+                User manager = userController.getUserByEmail(addTeamRequest.getManagerEmail());
+                if(!manager.getRole().equals(Role.ADMIN)){
+                    manager.setRole(Role.MANAGER);
+                }
+                manager = userController.save(manager);
+                Team team = addTeamRequest.getTeam();
+                team.setManager(manager);
+
+                team = companyController.saveTeam(team);
+                userController.addUsersToTeam(addTeamRequest.getMemberEmails(),team);
+                response.setData(team);
+                response.setStatus(HttpStatus.OK);
+                response.setSuccess(true);
+                response.setMessageLabel("manage_teams_add_done");
+            }
+        }
+        return response;
+    }
+
+    @DeleteMapping(path = "/deleteteam")
+    public ApiResponse<Team> deleteTeam(@RequestParam("id") Long teamId, HttpServletRequest request) {
+        ApiResponse<Team> response = new ApiResponse<>();
+        String token = jwtUtil.extractTokenFromCookie(request);
+        if (token == null || !jwtUtil.validateToken(token)) {
+            response.setData(null);
+            response.setStatus(HttpStatus.UNAUTHORIZED);
+            response.setSuccess(false);
+            response.setMessageLabel("auth_profile_expired_error_message");
+            response.setDoLogout(true);
+        }else{
+            String email = jwtUtil.extractUsername(token);
+            User user = userController.getUserByEmail(email);
+            if(user == null){
+                response.setData(null);
+                response.setStatus(HttpStatus.UNAUTHORIZED);
+                response.setSuccess(false);
+                response.setMessageLabel("auth_profile_expired_error_message");
+                response.setDoLogout(true);
+            }else{
+               Team team = teamController.deleteTeam(teamId);
+                response.setData(team);
+                response.setStatus(HttpStatus.OK);
+                response.setSuccess(true);
+                response.setMessageLabel("manage_teams_delete_team_success_deleting_message");
+            }
+        }
+        return response;
+    }
+
+    }
