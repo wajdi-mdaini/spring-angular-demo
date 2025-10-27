@@ -32,12 +32,7 @@ public class TeamController {
     public Team saveTeam(Team team) {
         return teamRepository.save(team);
     }
-    public Team addTeam(Team team) {
-        if (team.getName().equals("Administration")) {
-            return null;
-        }
-        return teamRepository.save(team);
-    }
+
     public List<User> getTeamMembers(Long teamId) {
         Optional<Team> team = teamRepository.findById(teamId);
         return team.get().getMembers();
@@ -47,13 +42,19 @@ public class TeamController {
         return userRepository.findByEmail(email);
     }
 
+    public List<Team> getTeamById(User manager) {
+        List<Team> teams = this.teamRepository.findByManager(manager);
+        return teams;
+    }
+
     public Team deleteTeam(Long teamId) {
         Team team = teamRepository.findById(teamId).get();
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User authUser = getUserByEmail(authentication.getPrincipal().toString());
         for (User user : team.getMembers()) {
             user.setTeam(null);
-            user.setRole(Role.EMPLOYEE);
+            if(user.getTeams().isEmpty())
+                user.setRole(Role.EMPLOYEE);
             userRepository.save(user);
 
             Notification notification = new Notification();

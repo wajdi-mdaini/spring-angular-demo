@@ -258,18 +258,17 @@ public class UserController implements UserDetailsService {
             User user = userRepository.findByEmail(userEmail);
             if (user.getTeam() != null && user.getTeam().equals(team)) {
                 user.setTeam(null);
-                if(!user.getRole().equals(Role.ADMIN)){
-                    user.setRole(Role.EMPLOYEE);
-                }
                 user.getTeams().remove(team);
+                if(!user.getRole().equals(Role.ADMIN)){
+                    if(user.getTeams().isEmpty())
+                        user.setRole(Role.EMPLOYEE);
+                }
                 userRepository.save(user);
             }
+            // Also remove all users in remainingUsers from the team's user list
+            team.getMembers().remove(user);
         }
-        // Also remove all users in remainingUsers from the team's user list
-        team.getMembers().removeAll(remainingUsers);
-        teamController.saveTeam(team);
-
-        return team;
+        return teamController.saveTeam(team);
     }
 
     public void setUserTeam(List<String> teamMembers, Team team) {
@@ -282,7 +281,8 @@ public class UserController implements UserDetailsService {
                 user.setTeams(team);
             }else if(!user.equals(team.getManager())) {
                 if(!user.getRole().equals(Role.ADMIN)) {
-                    user.setRole(Role.EMPLOYEE);
+                    if(user.getTeams().isEmpty())
+                        user.setRole(Role.EMPLOYEE);
                 }
             }
             userRepository.save(user);
@@ -299,7 +299,8 @@ public class UserController implements UserDetailsService {
                 user.setTeams(team);
             }else{
                 if(!user.getRole().equals(Role.ADMIN)) {
-                    user.setRole(Role.EMPLOYEE);
+                    if(user.getTeams().isEmpty())
+                        user.setRole(Role.EMPLOYEE);
                 }
             }
             userRepository.save(user);

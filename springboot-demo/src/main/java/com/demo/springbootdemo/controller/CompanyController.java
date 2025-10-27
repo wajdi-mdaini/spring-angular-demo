@@ -1,6 +1,7 @@
 package com.demo.springbootdemo.controller;
 
 import com.demo.springbootdemo.entity.Company;
+import com.demo.springbootdemo.entity.Role;
 import com.demo.springbootdemo.entity.Team;
 import com.demo.springbootdemo.entity.User;
 import com.demo.springbootdemo.model.ApiResponse;
@@ -29,6 +30,10 @@ public class CompanyController {
             return null;
         }
         return company;
+    }
+
+    public Company getCompanyById(Long companyId){
+        return companyRepository.findById(companyId).get();
     }
 
     public ApiResponse<Company> setCompany(Company company){
@@ -66,8 +71,13 @@ public class CompanyController {
         return response;
     }
 
-    public List<Team> getTeams(Company company){
-        return teamRepository.findByCompany(company);
+    public List<Team> getTeams(Company company,User user){
+        List<Team> teams = new ArrayList<>();
+        if(user.getEmail().equals(company.getCompanyCreator().getEmail()) || user.getRole().equals(Role.ADMIN))
+            teams.addAll(teamRepository.findByCompany(company));
+        else if(user.getRole().equals(Role.MANAGER))
+            teams.addAll(teamRepository.findByManager(user));
+        return teams;
     }
 
     public Company saveCompany(Company company){
