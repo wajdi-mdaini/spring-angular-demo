@@ -1,14 +1,8 @@
 package com.demo.springbootdemo.services;
 
 import com.demo.springbootdemo.configuration.JwtUtil;
-import com.demo.springbootdemo.controller.CloudinaryController;
-import com.demo.springbootdemo.controller.CompanyController;
-import com.demo.springbootdemo.controller.NotificationController;
-import com.demo.springbootdemo.controller.UserController;
-import com.demo.springbootdemo.entity.Company;
-import com.demo.springbootdemo.entity.Notification;
-import com.demo.springbootdemo.entity.Team;
-import com.demo.springbootdemo.entity.User;
+import com.demo.springbootdemo.controller.*;
+import com.demo.springbootdemo.entity.*;
 import com.demo.springbootdemo.model.*;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +22,9 @@ import java.util.Map;
 public class PublicService {
 
     private final JwtUtil jwtUtil;
+    @Autowired
+    private TeamController teamController;
+
     public PublicService(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
     }
@@ -188,8 +185,8 @@ public class PublicService {
     }
 
     @GetMapping(path = "/teammembers")
-    public ApiResponse<TeamDetailsResponse> getTeamMembers(HttpServletRequest request) {
-        ApiResponse<TeamDetailsResponse> response = new ApiResponse<>();
+    public ApiResponse<List<TeamDetailsResponse>> getTeamMembers(@RequestParam("id") String userEmail, HttpServletRequest request) {
+        ApiResponse<List<TeamDetailsResponse>> response = new ApiResponse<>();
         String token = jwtUtil.extractTokenFromCookie(request);
         if (token == null || !jwtUtil.validateToken(token)) {
             response.setData(null);
@@ -198,8 +195,7 @@ public class PublicService {
             response.setMessageLabel("auth_profile_expired_error_message");
             response.setDoLogout(true);
         }else{
-            String email = jwtUtil.extractUsername(token);
-            User user = userController.getUserByEmail(email);
+            User user = userController.getUserByEmail(userEmail);
             if(user == null){
                 response.setData(null);
                 response.setStatus(HttpStatus.UNAUTHORIZED);
@@ -207,15 +203,30 @@ public class PublicService {
                 response.setMessageLabel("auth_profile_expired_error_message");
                 response.setDoLogout(true);
             }else{
-                TeamDetailsResponse teamDetailsResponse= new TeamDetailsResponse();
-                if(user.getTeam() != null && user.getTeam().getManager() != null) {
-                    teamDetailsResponse.setTeamManager(user.getTeam().getManager());
-                    teamDetailsResponse.setMembers(user.getTeam().getMembers());
+                List<TeamDetailsResponse> TeamDetailsResponseList = new ArrayList<>();
+                List<Team> teams = new ArrayList<>();
+                if(user.getRole().equals(Role.MANAGER)){
+                    teams = teamController.getTeamByManager(user);
+                }else if(user.getRole().equals(Role.ADMIN)){
+                    Company company = companyController.getCompanyById(user.getCompany().getId());
+                    List<User> admins = userController.getUsersByRole(Role.ADMIN);
+                    Team adminsTeam = new Team();
+                    adminsTeam.setName(company.getName());
+                    adminsTeam.setManager(company.getCompanyCreator());
+                    adminsTeam.getMembers().addAll(admins);
+                    adminsTeam.setCompany(company);
+                    teams.add(adminsTeam);
                 }else{
-                    Company company = companyController.getMembersByUser(user);
-                    teamDetailsResponse.setTeamManager(company.getCompanyCreator());
+                    teams.add(user.getTeam());
                 }
-                response.setData(teamDetailsResponse);
+                teams.forEach(team -> {
+                    TeamDetailsResponse teamDetailsResponseList = new TeamDetailsResponse();
+                    teamDetailsResponseList.setTeam(team);
+                    teamDetailsResponseList.setMembers(team.getMembers());
+                    teamDetailsResponseList.setManager(team.getManager());
+                    TeamDetailsResponseList.add(teamDetailsResponseList);
+                });
+                response.setData(TeamDetailsResponseList);
                 response.setStatus(HttpStatus.OK);
                 response.setSuccess(true);
                 response.setShowToast(false);

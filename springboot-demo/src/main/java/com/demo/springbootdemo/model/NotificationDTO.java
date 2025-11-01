@@ -5,14 +5,14 @@ import lombok.Setter;
 
 @Getter @Setter
 public class NotificationDTO {
-    Long id;
-    Long at;
-    String titleLabel;
-    String messageLabel;
-    String fromName;
-    String fromId;
-    String fromProfilePictureUrl;
-    String toEmail;
-    Boolean read;
+    private Long id;
+    private Long at;
+    private String titleLabel;
+    private String messageLabel;
+    private String fromName;
+    private String fromId;
+    private String fromProfilePictureUrl;
+    private String toEmail;
+    private Boolean read;
 
 }

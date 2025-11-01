@@ -9,7 +9,7 @@ import java.util.List;
 
 @Setter @Getter
 public class TeamDetailsResponse {
-
-    private User teamManager;
+    private Team team;
     private List<User> members;
+    private User manager;
 }

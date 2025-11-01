@@ -6,7 +6,6 @@ import com.demo.springbootdemo.entity.Team;
 import com.demo.springbootdemo.entity.User;
 import com.demo.springbootdemo.repository.TeamRepository;
 import com.demo.springbootdemo.repository.UserRepository;
-import com.demo.springbootdemo.services.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,9 +41,12 @@ public class TeamController {
         return userRepository.findByEmail(email);
     }
 
-    public List<Team> getTeamById(User manager) {
-        List<Team> teams = this.teamRepository.findByManager(manager);
-        return teams;
+    public List<Team> getTeamByManager(User manager) {
+        return this.teamRepository.findByManager(manager);
+    }
+
+    public List<Team> getAllTeams() {
+        return this.teamRepository.findAll();
     }
 
     public Team deleteTeam(Long teamId) {

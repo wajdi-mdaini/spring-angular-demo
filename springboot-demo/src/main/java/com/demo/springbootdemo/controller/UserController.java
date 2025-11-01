@@ -8,10 +8,10 @@ import com.demo.springbootdemo.model.SignUpRequest;
 import com.demo.springbootdemo.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.mail.MessagingException;
+import org.aspectj.weaver.ast.Not;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.security.core.Authentication;
@@ -71,6 +71,14 @@ public class UserController implements UserDetailsService {
         return new CustomUserDetails(user);
     }
 
+    public void deleteUserEmailNotification(User user) throws MessagingException {
+        emailController.sendDeleteUserEmail(
+                user.getFirstname() + " " + user.getLastname(),
+                user.getEmail(),
+                user.getCompany().getName()
+        );
+    }
+
     public ApiResponse<User> addUser(SignUpRequest signUpRequest) throws MessagingException {
         ApiResponse<User> response = new ApiResponse<>();
         User existingUser = userRepository.findByEmail(signUpRequest.getUser().getEmail());
@@ -114,6 +122,17 @@ public class UserController implements UserDetailsService {
         }
     }
 
+    public String getNewPasswordAndSendMail(User user) throws MessagingException {
+        String generatedPassword = passwordGenerator.generateStrongPassword();
+        emailController.sendWelcomePasswordEmail(
+                user.getFirstname() + " " + user.getLastname(),
+                user.getEmail(),
+                generatedPassword,
+                user.getCompany().getName()
+        );
+        return generatedPassword;
+    }
+
     public User login(String email, String password) {
         User user = userRepository.findByEmail(email);
         if(user != null){
@@ -132,6 +151,10 @@ public class UserController implements UserDetailsService {
 
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email);
+    }
+
+    public List<User> getUsersByRole(Role role) {
+        return userRepository.findByRole(role);
     }
 
     public User setUser(User user) {
@@ -197,6 +220,17 @@ public class UserController implements UserDetailsService {
         return response;
     }
 
+    public void createNotification(User fromUser, User toUser, Long at, String titleLabel, String messageLabel){
+        Notification notification = new Notification();
+        notification.setFrom(fromUser);
+        notification.setAt(at);
+        notification.setTitleLabel(titleLabel);
+        notification.setMessageLabel(messageLabel);
+        notification.setTo(toUser);
+        notification = notificationController.saveNotification(notification);
+        webSocketService.sendNotification(notification);
+    }
+
     public ApiResponse<Boolean> changePassword(ChangePasswordRequest changePasswordRequest) {
         ApiResponse<Boolean> response = new ApiResponse<>();
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -212,20 +246,26 @@ public class UserController implements UserDetailsService {
             authUser.setAttempts(0);
             authUser.setLastPasswordResetDate(new Date().getTime());
             if(authUser.isFirstLogin()) {
+                User toUser;
+
                 Notification notification = new Notification();
                 notification.setFrom(authUser);
                 notification.setAt(new Date().getTime());
                 notification.setTitleLabel("notification_new_joiner_title");
                 notification.setMessageLabel("notification_new_joiner_message");
                 if(authUser.getTeam() != null && authUser.getTeam().getManager() != null)
-                    notification.setTo(authUser.getTeam().getManager());
+                    toUser = authUser.getTeam().getManager();
                 else {
 //                  send notification to company creator
                     Company authUserCompany = companyController.getMembersByUser(authUser);
-                    notification.setTo(authUserCompany.getCompanyCreator());
+                    toUser = authUserCompany.getCompanyCreator();
                 }
-                notification = notificationController.saveNotification(notification);
-                webSocketService.sendNotification(notification);
+                createNotification(
+                        authUser,
+                        toUser,
+                        new Date().getTime(),
+                        "notification_new_joiner_title",
+                        "notification_new_joiner_message");
                 authUser.setFirstLogin(false);
             }
             userRepository.save(authUser);
@@ -310,6 +350,10 @@ public class UserController implements UserDetailsService {
 
     public User save(User user) {
         return userRepository.save(user);
+    }
+
+    public void deleteUser(User user) {
+        userRepository.delete(user);
     }
 }
 

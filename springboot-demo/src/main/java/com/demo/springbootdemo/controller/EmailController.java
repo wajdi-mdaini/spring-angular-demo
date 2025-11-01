@@ -25,6 +25,24 @@ public class EmailController {
     private TemplateEngine templateEngine;
     @Value("${app.front.base.path}")
     private String loginUrl;
+
+    /**
+     * Send delete user email
+     */
+    public void sendDeleteUserEmail(String name, String email, String companyName)
+            throws MessagingException {
+
+        Context context = new Context();
+        context.setVariable("name", name);
+        context.setVariable("currentYear", new Date().getYear() + 1900);
+        context.setVariable("email", email);
+        context.setVariable("companyName", companyName.toUpperCase());
+
+        String subject = "WorkSync Account Removal – Confirmation of Deletion";
+        String htmlContent = templateEngine.process("email/user-deleted-notification", context);
+
+        sendHtmlEmail(email, subject, htmlContent);
+    }
     /**
      * Send welcome email with generated password to new user
      */

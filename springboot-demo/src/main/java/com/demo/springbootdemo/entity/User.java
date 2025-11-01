@@ -56,6 +56,9 @@ public class User {
     @JsonIgnore
     private List<Notification> notificationsTo = new ArrayList<>();
 
+    @OneToMany(mappedBy = "to")
+    private List<Document> documents = new ArrayList<>();
+
     public void setTeams(Team team){
         this.teams.add(team);
     }

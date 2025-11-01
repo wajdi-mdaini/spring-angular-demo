@@ -47,8 +47,19 @@ public class NotificationController {
                 .toList();
     }
 
+    public List<Notification> getAllNotificationsByUserFrom(User user){
+        return this.notificationRepository.findByFrom(user)
+                .stream()
+                .sorted(Comparator.comparing(Notification::getAt).reversed())
+                .toList();
+    }
+
     public Notification getNotificationsById(Long idNotification){
         return notificationRepository.findById(idNotification)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
+    }
+
+    public void deleteNotification(Notification notification){
+        notificationRepository.delete(notification);
     }
 }
