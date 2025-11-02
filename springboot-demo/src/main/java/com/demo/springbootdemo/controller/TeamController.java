@@ -45,8 +45,8 @@ public class TeamController {
         return this.teamRepository.findByManager(manager);
     }
 
-    public List<Team> getAllTeams() {
-        return this.teamRepository.findAll();
+    public Team getTeamById(Long teamId) {
+        return this.teamRepository.findById(teamId).get();
     }
 
     public Team deleteTeam(Long teamId) {

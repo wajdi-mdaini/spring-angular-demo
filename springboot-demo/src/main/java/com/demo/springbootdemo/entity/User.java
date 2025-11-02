@@ -22,7 +22,7 @@ public class User {
     private Long dateOfBirth;
     private Long  creationDate;
     private Long  lastPasswordResetDate;
-    private boolean isFirstLogin;
+    private boolean firstLogin;
     private boolean locked;
     private String profilePictureUrl;
     private String profilePicturePublicId;

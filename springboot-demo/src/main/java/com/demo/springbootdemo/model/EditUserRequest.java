@@ -7,5 +7,5 @@ import lombok.Setter;
 @Setter @Getter
 public class EditUserRequest {
     private boolean editRequest;
-    private User user;
+    private UserDTO userDTO;
 }

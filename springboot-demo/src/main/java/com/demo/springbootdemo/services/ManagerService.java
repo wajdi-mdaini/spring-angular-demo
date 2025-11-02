@@ -327,7 +327,7 @@ public class ManagerService {
             response.setMessageLabel("auth_profile_expired_error_message");
             response.setDoLogout(true);
         }else {
-            User existingUser = userController.getUserByEmail(editUserRequest.getUser().getEmail());
+            User existingUser = userController.getUserByEmail(editUserRequest.getUserDTO().getEmail());
             if(existingUser != null && !editUserRequest.isEditRequest()){
                 response.setStatus(HttpStatus.CONFLICT);
                 response.setMessageLabel("auth_signup_used_email_error_message");
@@ -349,18 +349,19 @@ public class ManagerService {
                                 "notification_edit_user_message");
                     }
                 }
-                user.setTeam(editUserRequest.getUser().getTeam());
-                user.setFirstname(editUserRequest.getUser().getFirstname());
-                user.setLastname(editUserRequest.getUser().getLastname());
-                user.setDateOfBirth(editUserRequest.getUser().getDateOfBirth());
-                user.setAddress(editUserRequest.getUser().getAddress());
-                user.setCity(editUserRequest.getUser().getCity());
-                user.setCountry(editUserRequest.getUser().getCountry());
-                user.setPostCode(editUserRequest.getUser().getPostCode());
-                user.setDegree(editUserRequest.getUser().getDegree());
-                user.setTitle(editUserRequest.getUser().getTitle());
+                Team team = teamController.getTeamById(editUserRequest.getUserDTO().getTeamId());
+                user.setTeam(team);
+                user.setFirstname(editUserRequest.getUserDTO().getFirstname());
+                user.setLastname(editUserRequest.getUserDTO().getLastname());
+                user.setDateOfBirth(editUserRequest.getUserDTO().getDateOfBirth());
+                user.setAddress(editUserRequest.getUserDTO().getAddress());
+                user.setCity(editUserRequest.getUserDTO().getCity());
+                user.setCountry(editUserRequest.getUserDTO().getCountry());
+                user.setPostCode(editUserRequest.getUserDTO().getPostCode());
+                user.setDegree(editUserRequest.getUserDTO().getDegree());
+                user.setTitle(editUserRequest.getUserDTO().getTitle());
                 if (!editUserRequest.isEditRequest()) {
-                    user.setEmail(editUserRequest.getUser().getEmail());
+                    user.setEmail(editUserRequest.getUserDTO().getEmail());
                     user.setRole(Role.EMPLOYEE);
                     user.setProfilePictureUrl("assets/img/default_profile_picture.png");
                     user.setCompany(authUser.getCompany());
@@ -370,10 +371,15 @@ public class ManagerService {
                     user.setLocked(false);
                 }
                 user = userController.save(user);
+                if (editUserRequest.isEditRequest())
+                    response.setMessageLabel("manage_users_edit_user_done");
+                 else
+                    response.setMessageLabel("manage_users_add_user_done");
+
+
                 response.setData(user);
                 response.setStatus(HttpStatus.OK);
                 response.setSuccess(true);
-                response.setShowToast(false);
             }
         }
         return response;
