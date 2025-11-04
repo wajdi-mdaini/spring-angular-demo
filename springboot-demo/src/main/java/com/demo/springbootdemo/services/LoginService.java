@@ -170,7 +170,6 @@ public class LoginService {
             response.setStatus(HttpStatus.UNAUTHORIZED);
             response.setSuccess(false);
             response.setMessageLabel("auth_profile_expired_error_message");
-            response.setDoLogout(true);
         }else{
             String email = jwtUtil.extractUsername(token);
             User user = userController.getUserByEmail(email);
@@ -186,7 +185,6 @@ public class LoginService {
                 response.setStatus(HttpStatus.UNAUTHORIZED);
                 response.setSuccess(false);
                 response.setMessageLabel("auth_profile_expired_error_message");
-                response.setDoLogout(true);
             }else{
                 LoginResponse  loginResponse = new LoginResponse();
                 loginResponse.setUser(user);

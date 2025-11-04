@@ -299,6 +299,9 @@ public class ManagerService {
                 documentController.findByTo(user).forEach(document -> {
                     documentController.deleteDocument(document);
                 });
+                documentController.findByFrom(user).forEach(document -> {
+                    documentController.deleteDocument(document);
+                });
                 // delete user
                 userController.deleteUser(user);
                 userController.deleteUserEmailNotification(user);

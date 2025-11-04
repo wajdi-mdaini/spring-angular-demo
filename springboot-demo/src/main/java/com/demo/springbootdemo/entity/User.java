@@ -57,9 +57,20 @@ public class User {
     private List<Notification> notificationsTo = new ArrayList<>();
 
     @OneToMany(mappedBy = "to")
-    private List<Document> documents = new ArrayList<>();
+    @JsonIgnore
+    private List<Document> documentsTo = new ArrayList<>();
+
+    @OneToMany(mappedBy = "from")
+    @JsonIgnore
+    private List<Document> documentsFrom = new ArrayList<>();
 
     public void setTeams(Team team){
         this.teams.add(team);
+    }
+    public void setDocumentsTo(Document documentsTo){
+        this.documentsTo.add(documentsTo);
+    }
+    public void setDocumentsFrom(Document documentsFrom){
+        this.documentsTo.add(documentsFrom);
     }
 }
