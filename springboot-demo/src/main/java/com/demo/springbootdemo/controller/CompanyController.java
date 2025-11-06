@@ -33,7 +33,7 @@ public class CompanyController {
     }
 
     public Company getCompanyById(Long companyId){
-        return companyRepository.findById(companyId).get();
+        return companyRepository.findById(companyId).orElse(null);
     }
 
     public ApiResponse<Company> setCompany(Company company){

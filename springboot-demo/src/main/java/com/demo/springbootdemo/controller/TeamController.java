@@ -34,7 +34,7 @@ public class TeamController {
 
     public List<User> getTeamMembers(Long teamId) {
         Optional<Team> team = teamRepository.findById(teamId);
-        return team.get().getMembers();
+        return team.map(Team::getMembers).orElse(null);
     }
 
     public User getUserByEmail(String email) {
@@ -46,28 +46,30 @@ public class TeamController {
     }
 
     public Team getTeamById(Long teamId) {
-        return this.teamRepository.findById(teamId).get();
+        return this.teamRepository.findById(teamId).orElse(null);
     }
 
     public Team deleteTeam(Long teamId) {
-        Team team = teamRepository.findById(teamId).get();
+        Team team = teamRepository.findById(teamId).orElse(null);
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User authUser = getUserByEmail(authentication.getPrincipal().toString());
-        for (User user : team.getMembers()) {
-            user.setTeam(null);
-            if(user.getTeams().isEmpty())
-                user.setRole(Role.EMPLOYEE);
-            userRepository.save(user);
+        if(team != null){
+            for (User user : team.getMembers()) {
+                user.setTeam(null);
+                if (user.getTeams().isEmpty())
+                    user.setRole(Role.EMPLOYEE);
+                userRepository.save(user);
 
-            Notification notification = new Notification();
-            notification.setTo(user);
-            notification.setFrom(authUser);
-            notification.setAt(new Date().getTime());
-            notification.setTitleLabel("manage_teams_delete_team_notification_title");
-            notification.setMessageLabel("manage_teams_delete_team_notification_message");
-            webSocketService.sendNotification(notificationController.saveNotification(notification));
+                Notification notification = new Notification();
+                notification.setTo(user);
+                notification.setFrom(authUser);
+                notification.setAt(new Date().getTime());
+                notification.setTitleLabel("manage_teams_delete_team_notification_title");
+                notification.setMessageLabel("manage_teams_delete_team_notification_message");
+                webSocketService.sendNotification(notificationController.saveNotification(notification));
+            }
+            teamRepository.delete(team);
         }
-        teamRepository.delete(team);
 
         return team;
     }

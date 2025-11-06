@@ -20,6 +20,8 @@ public class Company {
     private String email;
     private Long phone;
     private String website;
+    private String logoPublicId;
+    private String logoURL;
     @OneToOne
     @JsonIgnore
     private User companyCreator;
@@ -36,5 +38,9 @@ public class Company {
 
     public void setMembers(User member) {
         this.members.add(member);
+    }
+
+    public void setBranding(Branding branding) {
+        this.branding.add(branding);
     }
 }

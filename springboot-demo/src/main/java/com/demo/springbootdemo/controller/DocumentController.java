@@ -50,6 +50,6 @@ public class DocumentController {
     }
 
     public Document findById(Long id) {
-        return documentRepository.findById(id).get();
+        return documentRepository.findById(id).orElse(null);
     }
 }

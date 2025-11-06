@@ -130,7 +130,7 @@ public class UserController implements UserDetailsService {
                 generatedPassword,
                 user.getCompany().getName()
         );
-        return generatedPassword;
+        return passwordEncoder.encode(generatedPassword);
     }
 
     public User login(String email, String password) {

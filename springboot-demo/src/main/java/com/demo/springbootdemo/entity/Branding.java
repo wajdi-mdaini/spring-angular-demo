@@ -1,5 +1,6 @@
 package com.demo.springbootdemo.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,6 +14,7 @@ public class Branding {
     private String value;
 
     @ManyToOne()
+    @JsonIgnore
     @JoinColumn(name = "company", nullable = false)
     private Company company;
 }

@@ -59,8 +59,8 @@ public class ManagerService {
         return response;
     }
 
-    @PostMapping(path = "/getteams")
-    public ResponseEntity<ApiResponse<List<Team>>> getCompanyTeams(@RequestBody Company company,
+    @GetMapping(path = "/getteams")
+    public ResponseEntity<ApiResponse<List<Team>>> getCompanyTeams(@RequestParam("id") Long companyId,
                                                                    HttpServletRequest request) {
         String token = jwtUtil.extractTokenFromCookie(request);
         ApiResponse<List<Team>> response = new ApiResponse<>();
@@ -73,7 +73,7 @@ public class ManagerService {
         }else {
             String email = jwtUtil.extractUsername(token);
             User user = userController.getUserByEmail(email);
-            company = companyController.getCompanyById(company.getId());
+            Company company = companyController.getCompanyById(companyId);
             response.setData(companyController.getTeams(company,user));
             response.setSuccess(true);
             response.setShowToast(false);
@@ -226,10 +226,18 @@ public class ManagerService {
                 response.setDoLogout(true);
             }else{
                Team team = teamController.deleteTeam(teamId);
-                response.setData(team);
-                response.setStatus(HttpStatus.OK);
-                response.setSuccess(true);
-                response.setMessageLabel("manage_teams_delete_team_success_deleting_message");
+               if(team != null){
+                   response.setData(team);
+                   response.setStatus(HttpStatus.OK);
+                   response.setSuccess(true);
+                   response.setMessageLabel("manage_teams_delete_team_success_deleting_message");
+               }else{
+                   response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+                   response.setMessageLabel("error_status_INTERNAL_SERVER_ERROR");
+                   response.setSuccess(false);
+                   response.setDoLogout(true);
+               }
+
             }
         }
         return response;
