@@ -96,6 +96,7 @@ public class ManagerService {
             User manager = userController.getUserByEmail(editTeamRequest.getManagerEmail());
             if(!manager.getRole().equals(Role.ADMIN)){
                 manager.setRole(Role.MANAGER);
+                manager.setTeam(null);
             }
             manager = userController.save(manager);
             Team team = editTeamRequest.getTeam();
@@ -164,6 +165,7 @@ public class ManagerService {
                 User manager = userController.getUserByEmail(addTeamRequest.getManagerEmail());
                 if(!manager.getRole().equals(Role.ADMIN)){
                     manager.setRole(Role.MANAGER);
+                    manager.setTeam(null);
                 }
                 manager = userController.save(manager);
                 Team team = addTeamRequest.getTeam();
@@ -380,6 +382,8 @@ public class ManagerService {
                     user.setFirstLogin(true);
                     user.setAttempts(0);
                     user.setLocked(false);
+                    user.setSicknessLeaverSold(0F);
+                    user.setHolidaySold(0F);
                 }
                 user = userController.save(user);
                 if (editUserRequest.isEditRequest())

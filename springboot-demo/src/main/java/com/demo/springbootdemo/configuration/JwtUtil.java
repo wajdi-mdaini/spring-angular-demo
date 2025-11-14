@@ -1,4 +1,5 @@
 package com.demo.springbootdemo.configuration;
+import com.demo.springbootdemo.entity.Company;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import java.security.Key;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtUtil {
 
-    @Value("${app.token.expiration}")
+    @Value("${app.token.default.expiration}")
     private long EXPIRATION;
 
     private Key getSigningKey() {
@@ -20,8 +21,12 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
     }
 
-    public String generateToken(String username) {
-        long expirationMs = EXPIRATION * 60 * 1000;
+    public String generateToken(String username, Company company) {
+        long expirationMs;
+        if(company.getSettings() != null)
+            expirationMs = (long) company.getSettings().getJwtTokenExpireIn() * 60 * 1000;
+        else
+            expirationMs = EXPIRATION * 60 * 1000;
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())

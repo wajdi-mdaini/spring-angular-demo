@@ -1,5 +1,6 @@
 package com.demo.springbootdemo.configuration;
 
+import com.demo.springbootdemo.entity.CompanySettings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +25,8 @@ public class PasswordGenerator {
 
     private final SecureRandom random = new SecureRandom();
 
-    public String generateStrongPassword() {
+    public String generateStrongPassword(CompanySettings companySettings) {
+        if(companySettings != null) passwordLength = companySettings.getPasswordMinLength();
         if (passwordLength < 8) {
             throw new IllegalArgumentException("Password length must be at least 8 characters");
         }
@@ -57,9 +59,11 @@ public class PasswordGenerator {
         return new String(characters);
     }
 
-    public String generateCode() {
-        StringBuilder sb = new StringBuilder(verificationCodeLength);
-        for (int i = 0; i < verificationCodeLength; i++) {
+    public String generateCode(CompanySettings companySettings) {
+        int length = verificationCodeLength;
+        if(companySettings != null) length = companySettings.getVerificationCodeLength();
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
             int index = random.nextInt(CHARACTERS.length());
             sb.append(CHARACTERS.charAt(index));
         }

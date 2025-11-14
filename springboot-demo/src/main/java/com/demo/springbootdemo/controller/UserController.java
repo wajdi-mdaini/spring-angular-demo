@@ -1,18 +1,23 @@
 package com.demo.springbootdemo.controller;
 
+import com.demo.springbootdemo.configuration.JwtUtil;
 import com.demo.springbootdemo.configuration.PasswordGenerator;
 import com.demo.springbootdemo.entity.*;
 import com.demo.springbootdemo.model.ApiResponse;
 import com.demo.springbootdemo.model.ChangePasswordRequest;
+import com.demo.springbootdemo.model.ResetPasswordResponse;
 import com.demo.springbootdemo.model.SignUpRequest;
 import com.demo.springbootdemo.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.mail.MessagingException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import org.aspectj.weaver.ast.Not;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -52,6 +57,9 @@ public class UserController implements UserDetailsService {
     @Autowired
     private WebSocketService webSocketService;
 
+    @Autowired
+    private CompanySettingsController companySettingsController;
+
     @Value("${app.shared.verification-code-expire-in}")
     private long verificationExpireIn;
 
@@ -64,6 +72,13 @@ public class UserController implements UserDetailsService {
     @Qualifier("verificationCodeScheduler")
     private ThreadPoolTaskScheduler scheduler;
 
+    @Value("${app.token.default.expiration}")
+    private long EXPIRATION;
+
+    private final JwtUtil jwtUtil;
+    public UserController(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -91,7 +106,9 @@ public class UserController implements UserDetailsService {
         }else {
             User user = signUpRequest.getUser();
             Company company = signUpRequest.getCompany();
-
+            CompanySettings companySettings = new CompanySettings();
+            companySettings = companySettingsController.saveSettings(companySettings);
+            company.setSettings(companySettings);
             company = companyController.saveCompany(company);
             user.setCompany(company);
             user.setRole(Role.ADMIN);
@@ -99,8 +116,10 @@ public class UserController implements UserDetailsService {
             user.setLocked(false);
             user.setAttempts(0);
             user.setCreationDate(new Date().getTime());
+            user.setSicknessLeaverSold(0F);
+            user.setHolidaySold(0F);
             user.setProfilePictureUrl("assets/img/default_profile_picture.png");
-            String generatedPassword = passwordGenerator.generateStrongPassword();
+            String generatedPassword = passwordGenerator.generateStrongPassword(companySettings);
             user.setPassword(passwordEncoder.encode(generatedPassword)); // hash the password
             user = userRepository.save(user);
             company.setMembers(user);
@@ -123,7 +142,7 @@ public class UserController implements UserDetailsService {
     }
 
     public String getNewPasswordAndSendMail(User user) throws MessagingException {
-        String generatedPassword = passwordGenerator.generateStrongPassword();
+        String generatedPassword = passwordGenerator.generateStrongPassword(user.getCompany().getSettings());
         emailController.sendWelcomePasswordEmail(
                 user.getFirstname() + " " + user.getLastname(),
                 user.getEmail(),
@@ -172,8 +191,8 @@ public class UserController implements UserDetailsService {
         );
     }
 
-    public ApiResponse<String> resetPasswordMailConfirmation(String email) throws MessagingException {
-        ApiResponse<String> response = new ApiResponse<>();
+    public ApiResponse<ResetPasswordResponse> resetPasswordMailConfirmation(String email) throws MessagingException {
+        ApiResponse<ResetPasswordResponse> response = new ApiResponse<>();
         User user = getUserByEmail(email);
         if(user == null){
             response.setData(null);
@@ -181,23 +200,28 @@ public class UserController implements UserDetailsService {
             response.setMessageLabel("error_status_UNAUTHORIZED");
             response.setSuccess(false);
         }else{
-            String code = passwordGenerator.generateCode();
+            String code = passwordGenerator.generateCode(user.getCompany().getSettings());
             user.setVerificationCode(code);
             userRepository.save(user);
+            if(user.getCompany().getSettings() != null) verificationExpireIn = user.getCompany().getSettings().getVerificationCodeExpireIn();
             scheduleAttributeChange(user);
             emailController.sendResetPasswordConfirmationEmail(email, code, user, verificationExpireIn);
             response.setStatus(HttpStatus.OK);
-            response.setData(user.getFirstname() + " " + user.getLastname());
+            ResetPasswordResponse resetPasswordResponse = new ResetPasswordResponse();
+            resetPasswordResponse.setFullName(user.getFirstname() + " " + user.getLastname());
+            resetPasswordResponse.setVerificationCodeLength(user.getCompany().getSettings().getVerificationCodeLength());
+            resetPasswordResponse.setVerificationCodeExpireIn(verificationExpireIn);
+            resetPasswordResponse.setPasswordMinLength(user.getCompany().getSettings().getPasswordMinLength());
+            response.setData(resetPasswordResponse);
             response.setShowToast(false);
             response.setSuccess(true);
         }
         return response;
     }
 
-    public ApiResponse<Boolean> resetPasswordCodeCheck(String code) {
-        ApiResponse<Boolean> response = new ApiResponse<>();
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User authUser = getUserByEmail(authentication.getPrincipal().toString());
+    public ApiResponse<User> resetPasswordCodeCheck(String code, String email, HttpServletResponse httpResponse) {
+        ApiResponse<User> response = new ApiResponse<>();
+        User authUser = getUserByEmail(email);
         if(authUser == null){
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
             response.setMessageLabel("error_status_INTERNAL_SERVER_ERROR");
@@ -206,6 +230,7 @@ public class UserController implements UserDetailsService {
         }else{
             boolean status = authUser.getVerificationCode().equalsIgnoreCase(code);
             if(status){
+                response.setData(authUser);
                 response.setStatus(HttpStatus.OK);
                 response.setShowToast(false);
                 response.setSuccess(true);
@@ -260,12 +285,13 @@ public class UserController implements UserDetailsService {
                     Company authUserCompany = companyController.getMembersByUser(authUser);
                     toUser = authUserCompany.getCompanyCreator();
                 }
-                createNotification(
-                        authUser,
-                        toUser,
-                        new Date().getTime(),
-                        "notification_new_joiner_title",
-                        "notification_new_joiner_message");
+                if(toUser != null && !toUser.getEmail().equals(authUser.getEmail()))
+                    createNotification(
+                            authUser,
+                            toUser,
+                            new Date().getTime(),
+                            "notification_new_joiner_title",
+                            "notification_new_joiner_message");
                 authUser.setFirstLogin(false);
             }
             userRepository.save(authUser);
@@ -354,6 +380,29 @@ public class UserController implements UserDetailsService {
 
     public void deleteUser(User user) {
         userRepository.delete(user);
+    }
+
+    // Runs at 23:59 on the last day of every month
+    @Scheduled(cron = "59 23 L * *")
+    public void setUsersHolidaySold() {
+        List<User> users = userRepository.findAll();
+        users.forEach(user -> {
+            Company userCompany = user.getCompany();
+            Float currentHolidaySold = user.getHolidaySold();
+            user.setHolidaySold(currentHolidaySold + userCompany.getSettings().getHolidayDaysPerMonth());
+            userRepository.save(user);
+        });
+    }
+    // Runs at 23:59 each 31 dec at 23:59
+    @Scheduled(cron = "59 23 31 12 *")
+    public void setUsersAnnualSicknessLeaverSold() {
+        List<User> users = userRepository.findAll();
+        users.forEach(user -> {
+            Company userCompany = user.getCompany();
+            Float currentSicknessLeaverSold = user.getSicknessLeaverSold();
+            user.setSicknessLeaverSold(currentSicknessLeaverSold + userCompany.getSettings().getSicknessLeaverDaysPerYear());
+            userRepository.save(user);
+        });
     }
 }
 

@@ -34,6 +34,8 @@ public class User {
     private String country;
     private String postCode;
     private String title;
+    private Float holidaySold = 0F;
+    private Float sicknessLeaverSold = 10F;
     @Enumerated(EnumType.STRING)
     private Role role;
 
@@ -63,6 +65,10 @@ public class User {
     @OneToMany(mappedBy = "from")
     @JsonIgnore
     private List<Document> documentsFrom = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    @JsonIgnore
+    private List<Holiday> holidays = new ArrayList<>();
 
     public void setTeams(Team team){
         this.teams.add(team);

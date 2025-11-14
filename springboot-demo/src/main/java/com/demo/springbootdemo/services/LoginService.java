@@ -37,7 +37,7 @@ public class LoginService {
     @Autowired
     private SharedSettings sharedSettings;
 
-    @Value("${app.token.expiration}")
+    @Value("${app.token.default.expiration}")
     private int EXPIRATION;
 
     @RequestMapping(path = "/login", method = RequestMethod.POST)
@@ -56,7 +56,7 @@ public class LoginService {
                 LoginResponse loginResponse = new LoginResponse();
                 loginResponse.setUser(loggedInUser);
                 loginResponse.setCompany(company);
-                String jwtToken = jwtUtil.generateToken(loggedInUser.getEmail());
+                String jwtToken = jwtUtil.generateToken(loggedInUser.getEmail(),company);
                 response.setData(loginResponse);
                 response.setStatus(HttpStatus.OK);
                 response.setSuccess(true);
@@ -65,7 +65,11 @@ public class LoginService {
                 cookie.setHttpOnly(true); // protect from JavaScript
                 cookie.setSecure(true);   // only HTTPS
                 cookie.setPath("/");      // available for the whole domain
-                cookie.setMaxAge(EXPIRATION * 60); // 30 minutes for expiration
+                if(company.getSettings() != null){
+                    cookie.setMaxAge(company.getSettings().getJwtTokenExpireIn() * 60);
+                }else{
+                    cookie.setMaxAge(EXPIRATION * 60);
+                }
                 httpResponse.addCookie(cookie);
 
             }
@@ -95,14 +99,28 @@ public class LoginService {
     }
 
     @RequestMapping(path = "/resetpasswordconfirmation", method = RequestMethod.POST)
-    public ResponseEntity<ApiResponse<String>> resetPasswordConfirmation(@RequestParam("email") String email) throws MessagingException {
-        ApiResponse<String> response = userController.resetPasswordMailConfirmation(email);
+    public ResponseEntity<ApiResponse<ResetPasswordResponse>> resetPasswordConfirmation(@RequestParam("email") String email) throws MessagingException {
+        ApiResponse<ResetPasswordResponse> response = userController.resetPasswordMailConfirmation(email);
         return new ResponseEntity<>( response , response.getStatus());
     }
 
     @RequestMapping(path = "/resetpasswordcodecheck", method = RequestMethod.GET)
-    public ResponseEntity<ApiResponse<Boolean>>  resetPasswordCodeCheck(@RequestParam("code") String code) {
-        ApiResponse<Boolean> response = userController.resetPasswordCodeCheck(code);
+    public ResponseEntity<ApiResponse<User>>  resetPasswordCodeCheck(@RequestParam("code") String code, @RequestParam("email") String email, HttpServletResponse httpResponse) {
+        ApiResponse<User> response = userController.resetPasswordCodeCheck(code,email,httpResponse);
+        if(response.getData() != null) {
+            Company company = response.getData().getCompany();
+            String jwtToken = jwtUtil.generateToken(response.getData().getEmail(), company);
+            Cookie cookie = new Cookie("jwt", jwtToken);
+            cookie.setHttpOnly(true); // protect from JavaScript
+            cookie.setSecure(true);   // only HTTPS
+            cookie.setPath("/");      // available for the whole domain
+            if (company.getSettings() != null) {
+                cookie.setMaxAge(company.getSettings().getJwtTokenExpireIn() * 60);
+            } else {
+                cookie.setMaxAge((int) (EXPIRATION * 60));
+            }
+            httpResponse.addCookie(cookie);
+        }
         return new ResponseEntity<>( response , response.getStatus());
     }
 

@@ -22,9 +22,14 @@ public class Company {
     private String website;
     private String logoPublicId;
     private String logoURL;
+
+    @OneToOne
+    private CompanySettings settings;
+
     @OneToOne
     @JsonIgnore
     private User companyCreator;
+
     @OneToMany(mappedBy = "company")
     @JsonIgnore
     List<Team> teams = new ArrayList<>();

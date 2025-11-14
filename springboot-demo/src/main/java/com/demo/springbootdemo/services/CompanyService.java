@@ -1,13 +1,8 @@
 package com.demo.springbootdemo.services;
 
 import com.demo.springbootdemo.configuration.JwtUtil;
-import com.demo.springbootdemo.controller.BrandingController;
-import com.demo.springbootdemo.controller.CloudinaryController;
-import com.demo.springbootdemo.controller.CompanyController;
-import com.demo.springbootdemo.entity.Branding;
-import com.demo.springbootdemo.entity.Company;
-import com.demo.springbootdemo.entity.Team;
-import com.demo.springbootdemo.entity.User;
+import com.demo.springbootdemo.controller.*;
+import com.demo.springbootdemo.entity.*;
 import com.demo.springbootdemo.model.ApiResponse;
 import com.demo.springbootdemo.model.CompanyDTO;
 import com.demo.springbootdemo.model.SetBrandingResponse;
@@ -40,6 +35,12 @@ public class CompanyService {
 
     @Autowired
     private CloudinaryController cloudinaryController;
+
+    @Autowired
+    private UserController userController;
+
+    @Autowired
+    private CompanySettingsController companySettingsController;
 
     @PostMapping(path = "/setcompanydetails")
     public ResponseEntity<ApiResponse<Company>> setCompanyDetails(@RequestBody CompanyDTO companyDTO,
@@ -168,5 +169,36 @@ public class CompanyService {
             }
         }
         return new ResponseEntity<>( response , response.getStatus());
+    }
+
+    @PostMapping(path = "/update-settings")
+    public ApiResponse<Company> updateCompany(@RequestBody CompanySettings companySettings, HttpServletRequest request) {
+        ApiResponse<Company> response = new ApiResponse<>();
+        String token = jwtUtil.extractTokenFromCookie(request);
+        if (token == null || !jwtUtil.validateToken(token)) {
+            response.setData(null);
+            response.setStatus(HttpStatus.UNAUTHORIZED);
+            response.setSuccess(false);
+            response.setMessageLabel("auth_profile_expired_error_message");
+            response.setDoLogout(true);
+        }else {
+            String email = jwtUtil.extractUsername(token);
+            User authUser = userController.getUserByEmail(email);
+            Company company = authUser.getCompany();
+            if (company == null) {
+                response.setData(null);
+                response.setStatus(HttpStatus.UNAUTHORIZED);
+                response.setSuccess(false);
+                response.setMessageLabel("auth_profile_expired_error_message");
+                response.setDoLogout(true);
+            } else {
+                companySettingsController.saveSettings(companySettings);
+                response.setStatus(HttpStatus.OK);
+                response.setShowToast(false);
+                response.setData(company);
+                response.setSuccess(true);
+            }
+        }
+        return response;
     }
 }
