@@ -70,6 +70,10 @@ public class User {
     @JsonIgnore
     private List<Holiday> holidays = new ArrayList<>();
 
+    @ManyToMany(mappedBy = "participants")
+    @JsonIgnore
+    private List<Event> events = new ArrayList<>();
+
     public void setTeams(Team team){
         this.teams.add(team);
     }
@@ -78,5 +82,8 @@ public class User {
     }
     public void setDocumentsFrom(Document documentsFrom){
         this.documentsTo.add(documentsFrom);
+    }
+    public void setEvents(Event event){
+        this.events.add(event);
     }
 }

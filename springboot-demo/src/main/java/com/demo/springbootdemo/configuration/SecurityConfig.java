@@ -30,6 +30,7 @@ public class SecurityConfig {
                 .cors().and()
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/events/**").permitAll()
                         .requestMatchers("/administration/**").hasRole("ADMIN")
                         .requestMatchers("/company/**").hasRole("ADMIN")
                         .requestMatchers("/management/**").hasAnyRole("ADMIN","MANAGER")

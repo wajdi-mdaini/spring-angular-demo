@@ -1,5 +1,6 @@
 package com.demo.springbootdemo.repository;
 
+import com.demo.springbootdemo.entity.Company;
 import com.demo.springbootdemo.entity.Role;
 import com.demo.springbootdemo.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,4 +12,5 @@ public interface UserRepository extends JpaRepository<User,String> {
     User findByEmail(String email);
     List<User> findByRoleAndTeamIsNull(Role role);
     List<User> findByRole(Role role);
+    List<User> findByCompany(Company company);
 }

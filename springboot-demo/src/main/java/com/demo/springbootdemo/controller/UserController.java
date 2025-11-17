@@ -176,6 +176,10 @@ public class UserController implements UserDetailsService {
         return userRepository.findByRole(role);
     }
 
+    public List<User> getUsersByCompany(Company company) {
+        return userRepository.findByCompany(company);
+    }
+
     public User setUser(User user) {
         return userRepository.save(user);
     }
