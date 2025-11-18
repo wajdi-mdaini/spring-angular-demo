@@ -54,6 +54,10 @@ public class NotificationController {
                 .toList();
     }
 
+    public List<Notification> getNotificationListByUserFormAndTitlesLabel(User userFrom,List<String> titles){
+        return this.notificationRepository.findByFromAndTitleLabelIn(userFrom, titles);
+    }
+
     public Notification getNotificationsById(Long idNotification){
         return notificationRepository.findById(idNotification)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));

@@ -18,4 +18,5 @@ public class EditEventDTO {
     private EventType type;
     private List<String> participantEmails = new ArrayList<>();
     private boolean fullcalendarEvent;
+    private String organizerEmail;
 }

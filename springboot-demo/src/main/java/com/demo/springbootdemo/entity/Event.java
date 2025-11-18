@@ -31,4 +31,8 @@ public class Event {
     public void setParticipants(User participant) {
         this.participants.add(participant);
     }
+
+    public void emptyParticipantList(){
+        this.participants.clear();
+    }
 }
