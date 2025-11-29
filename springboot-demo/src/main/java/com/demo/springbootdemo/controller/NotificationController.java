@@ -28,10 +28,7 @@ public class NotificationController {
     }
 
     public List<Notification> getLimitedNotificationsByUserTo(User user){
-        List<Notification> savedNotifications = this.notificationRepository.findByTo(user)
-                .stream()
-                .sorted(Comparator.comparing(Notification::getAt).reversed())
-                .toList();
+        List<Notification> savedNotifications = this.notificationRepository.findByToOrderByAtDesc(user);
         List<Notification> notifications = new ArrayList<>();
         int numberOfNotifications = Math.min(savedNotifications.size(), maxNotificationsNumber);
         for(int index = 0; index < numberOfNotifications; index++){
@@ -41,10 +38,7 @@ public class NotificationController {
     }
 
     public List<Notification> getAllNotificationsByUserTo(User user){
-        return this.notificationRepository.findByTo(user)
-                .stream()
-                .sorted(Comparator.comparing(Notification::getAt).reversed())
-                .toList();
+        return this.notificationRepository.findByToOrderByAtDesc(user);
     }
 
     public List<Notification> getAllNotificationsByUserFrom(User user){

@@ -109,6 +109,7 @@ public class UserController implements UserDetailsService {
             CompanySettings companySettings = new CompanySettings();
             companySettings = companySettingsController.saveSettings(companySettings);
             company.setSettings(companySettings);
+            company.setAt(new Date().getTime());
             company = companyController.saveCompany(company);
             user.setCompany(company);
             user.setRole(Role.ADMIN);
@@ -176,8 +177,10 @@ public class UserController implements UserDetailsService {
         return userRepository.findByRole(role);
     }
 
-    public List<User> getUsersByCompany(Company company) {
-        return userRepository.findByCompany(company);
+    public List<User> getUsersByCompany(User authUser) {
+        List<User> users = userRepository.findByCompany(authUser.getCompany());
+        users.remove(authUser);
+        return users;
     }
 
     public User setUser(User user) {
@@ -198,10 +201,20 @@ public class UserController implements UserDetailsService {
     public ApiResponse<ResetPasswordResponse> resetPasswordMailConfirmation(String email) throws MessagingException {
         ApiResponse<ResetPasswordResponse> response = new ApiResponse<>();
         User user = getUserByEmail(email);
-        if(user == null){
+        if(user == null) {
             response.setData(null);
             response.setStatus(HttpStatus.UNAUTHORIZED);
             response.setMessageLabel("error_status_UNAUTHORIZED");
+            response.setSuccess(false);
+        }else if(user.isFirstLogin()){
+            response.setData(null);
+            response.setStatus(HttpStatus.UNAUTHORIZED);
+            response.setMessageLabel("error_status_UNAUTHORIZED_set_password_first_login");
+            response.setSuccess(false);
+        }else if(user.isLocked()){
+            response.setData(null);
+            response.setStatus(HttpStatus.UNAUTHORIZED);
+            response.setMessageLabel("error_status_UNAUTHORIZED_set_password_locked");
             response.setSuccess(false);
         }else{
             String code = passwordGenerator.generateCode(user.getCompany().getSettings());
@@ -345,7 +358,8 @@ public class UserController implements UserDetailsService {
         for (String userEmail : teamMembers) {
             User user = userRepository.findByEmail(userEmail);
             team.setMembers(user);
-            user.setTeam(team);
+            if(user.getRole().equals(Role.EMPLOYEE))
+                user.setTeam(team);
             if(user.equals(team.getManager()) &&
                !user.getTeams().contains(team)){
                 user.setTeams(team);

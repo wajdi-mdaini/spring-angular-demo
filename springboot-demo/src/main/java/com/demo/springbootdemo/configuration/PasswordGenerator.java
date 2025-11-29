@@ -12,8 +12,7 @@ public class PasswordGenerator {
     private static final String UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private static final String LOWER = "abcdefghijklmnopqrstuvwxyz";
     private static final String DIGITS = "0123456789";
-    private static final String SPECIAL = "!@#$%^&*()-_=+[]{}|;:,.<>?";
-    private static final String ALL_CHARS = UPPER + LOWER + DIGITS + SPECIAL;
+    private static final String ALL_CHARS = UPPER + LOWER + DIGITS;
     private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     @Value("${app.generated.password.length}")
@@ -37,7 +36,6 @@ public class PasswordGenerator {
         password.append(UPPER.charAt(random.nextInt(UPPER.length())));
         password.append(LOWER.charAt(random.nextInt(LOWER.length())));
         password.append(DIGITS.charAt(random.nextInt(DIGITS.length())));
-        password.append(SPECIAL.charAt(random.nextInt(SPECIAL.length())));
 
         // Fill the rest with random characters from all categories
         for (int i = 4; i < passwordLength; i++) {

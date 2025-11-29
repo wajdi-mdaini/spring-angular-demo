@@ -9,11 +9,11 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.demo</groupId>
-    <artifactId>springboot-demo</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <artifactId>workSync-backend</artifactId>
+    <version>1.0-SNAPSHOT</version>
     <packaging>war</packaging>
-    <name>springboot-demo</name>
-    <description>springboot-demo</description>
+    <name>workSync-backend</name>
+    <description>workSync-backend</description>
     <url/>
     <licenses>
         <license/>

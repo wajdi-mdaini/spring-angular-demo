@@ -7,6 +7,7 @@ import com.demo.springbootdemo.repository.EventRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -59,6 +60,20 @@ public class EventController {
         notification.setMessageLabel("manage_event_delete_done_notification_message");
 
         webSocketService.sendNotification(notificationController.saveNotification(notification));
+    }
+
+    public List<Event> getEventsOfTheMonth(){
+        List<Event> allEvents = eventRepository.findAllByOrderByAtDesc();
+        List<Event> results = new ArrayList<>();
+        int currentMonth = new Date().getMonth();
+        for(Event event: allEvents){
+            if(new Date(event.getFrom()).getMonth() == currentMonth ||
+                    new Date(event.getTo()).getMonth() == currentMonth ||
+            (new Date(event.getFrom()).getMonth() < currentMonth && new Date(event.getTo()).getMonth() > currentMonth)){
+                results.add(event);
+            }
+        }
+        return results;
     }
 
     public void deleteEvent(Event event){

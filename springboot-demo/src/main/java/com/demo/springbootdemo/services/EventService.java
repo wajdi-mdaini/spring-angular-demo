@@ -112,7 +112,7 @@ public class EventService {
             response.setDoLogout(true);
         } else {
             User authUser = userController.getUserByEmail(userEmail);
-            response.setData(userController.getUsersByCompany(authUser.getCompany()));
+            response.setData(userController.getUsersByCompany(authUser));
             response.setSuccess(true);
             response.setShowToast(false);
             response.setStatus(HttpStatus.OK);

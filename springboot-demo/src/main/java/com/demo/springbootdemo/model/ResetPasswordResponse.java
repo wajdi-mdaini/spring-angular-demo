@@ -10,4 +10,5 @@ public class ResetPasswordResponse {
     private int verificationCodeLength;
     private Long verificationCodeExpireIn;
     private int passwordMinLength;
+    private boolean firstLogin;
 }

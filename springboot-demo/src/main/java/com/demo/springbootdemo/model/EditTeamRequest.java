@@ -11,7 +11,9 @@ import java.util.List;
 public class EditTeamRequest {
     private List<String> remainingUsers;
     private List<String> teamMembers;
-    private Team team;
     private String managerEmail;
+    private Long teamId;
+    private String description;
+    private String name;
 
 }

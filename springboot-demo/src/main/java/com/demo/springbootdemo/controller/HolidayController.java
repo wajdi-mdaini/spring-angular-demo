@@ -48,28 +48,32 @@ public class HolidayController {
         User userTo;
         if(user.getTeam() == null || user.getRole() == Role.ADMIN) userTo = user.getCompany().getCompanyCreator();
         else userTo = user.getTeam().getManager();
-        Notification notification = new Notification();
-        notification.setTo(userTo);
-        notification.setFrom(user);
-        notification.setAt(new Date().getTime());
-        notification.setTitleLabel("book_holiday_notification_title");
-        notification.setMessageLabel("book_holiday_notification_message");
-        webSocketService.sendNotification(notificationController.saveNotification(notification));
+        if(!userTo.getEmail().equals(user.getEmail())){
+            Notification notification = new Notification();
+            notification.setTo(userTo);
+            notification.setFrom(user);
+            notification.setAt(new Date().getTime());
+            notification.setTitleLabel("book_holiday_notification_title");
+            notification.setMessageLabel("book_holiday_notification_message");
+            webSocketService.sendNotification(notificationController.saveNotification(notification));
+        }
     }
 
     public void holidayRequestStatusChange(User userTo,User userFrom, HolidayStatus holidayStatus) {
-        Notification notification = new Notification();
-        notification.setTo(userTo);
-        notification.setFrom(userFrom);
-        notification.setAt(new Date().getTime());
-        notification.setTitleLabel(
-                holidayStatus.equals(HolidayStatus.APPROVED) ? "book_holiday_approved_notification_title" :
-                        holidayStatus.equals(HolidayStatus.REJECTED) ? "book_holiday_rejected_notification_title" : "book_holiday_canceled_notification_title"
-        );
-        notification.setMessageLabel(
-                holidayStatus.equals(HolidayStatus.APPROVED) ? "book_holiday_approved_notification_message" :
-                        holidayStatus.equals(HolidayStatus.REJECTED) ? "book_holiday_rejected_notification_message" : "book_holiday_canceled_notification_message"
-        );
-        webSocketService.sendNotification(notificationController.saveNotification(notification));
+        if(!userTo.getEmail().equals(userFrom.getEmail())) {
+            Notification notification = new Notification();
+            notification.setTo(userTo);
+            notification.setFrom(userFrom);
+            notification.setAt(new Date().getTime());
+            notification.setTitleLabel(
+                    holidayStatus.equals(HolidayStatus.APPROVED) ? "book_holiday_approved_notification_title" :
+                            holidayStatus.equals(HolidayStatus.REJECTED) ? "book_holiday_rejected_notification_title" : "book_holiday_canceled_notification_title"
+            );
+            notification.setMessageLabel(
+                    holidayStatus.equals(HolidayStatus.APPROVED) ? "book_holiday_approved_notification_message" :
+                            holidayStatus.equals(HolidayStatus.REJECTED) ? "book_holiday_rejected_notification_message" : "book_holiday_canceled_notification_message"
+            );
+            webSocketService.sendNotification(notificationController.saveNotification(notification));
+        }
     }
 }

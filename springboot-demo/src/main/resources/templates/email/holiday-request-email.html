@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holiday Request Accepted</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px 20px;
+            text-align: center;
+            color: white;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .logo-img {
+            max-width: 150px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .welcome-text {
+            font-size: 24px;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .footer {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .social-links {
+            margin: 15px 0;
+        }
+        .social-links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <!-- Header -->
+    <div class="header">
+        <div class="logo" th:text="'🚀 '+ ${companyName}">YourCompany</div>
+        <h1>Holiday Request Approved!</h1>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <div class="welcome-text">
+            Hello, <span th:text="${name}">Employee Name</span>!
+        </div>
+
+        <p th:if="${approved}">We are pleased to inform you that your holiday request has been <strong>accepted</strong>.</p>
+        <p th:unless="${approved}">We are sorry to inform you that your holiday request has been <strong style="color:  #e74c3c;">rejected</strong>.</p>
+
+        <div class="info-box">
+            <h3>📅 Holiday Details</h3>
+            <p>Here is the information regarding your approved holiday:</p>
+            <ul>
+                <li><strong>Start Date:</strong> <span th:text="${holidayStart}">2025-12-20</span></li>
+                <li><strong>End Date:</strong> <span th:text="${holidayEnd}">2025-12-25</span></li>
+                <li><strong>Holiday type:</strong> <span th:text="${type}">5</span></li>
+            </ul>
+        </div>
+
+        <p th:if="${approved}">Enjoy your time off! If you have any questions or need to make adjustments, please contact your manager.</p>
+        <p th:unless="${approved}">Your holiday request has been rejected.
+            If you believe this decision is incorrect or need clarification, please contact your manager for more information.</p>
+
+        <div style="text-align: center;">
+            <a th:href="${portalUrl}" class="button" target="_blank">View Your Holidays in Portal</a>
+        </div>
+
+        <div class="social-links">
+            Follow us:
+            <a href="https://linkedin.com/in/wajdi-mdaini" target="_blank">LinkedIn</a> •
+            <a href="https://www.facebook.com/wajdi.mdaini.2025" target="_blank">Facebook</a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p th:text="'©'+ ${currentYear} +' WorkSync . All rights reserved.'">2025 YourCompany. All rights reserved.</p>
+        <p>1235 Olympic city, kasserine, Tunisia</p>
+        <p>
+            <a href="#" style="color: #95a5a6; text-decoration: none;">Unsubscribe</a> •
+            <a href="#" style="color: #95a5a6; text-decoration: none;">Privacy Policy</a> •
+            <a href="#" style="color: #95a5a6; text-decoration: none;">Terms of Service</a>
+        </p>
+    </div>
+</div>
+</body>
+</html>

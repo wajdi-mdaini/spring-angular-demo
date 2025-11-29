@@ -1,5 +1,6 @@
 package com.demo.springbootdemo.model;
 
+import com.demo.springbootdemo.entity.Role;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,4 +17,5 @@ public class UserDTO {
     private String degree;
     private String title;
     private Long teamId;
+    private Role role;
 }

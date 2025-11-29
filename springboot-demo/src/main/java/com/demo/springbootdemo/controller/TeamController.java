@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -33,8 +34,15 @@ public class TeamController {
     }
 
     public List<User> getTeamMembers(Long teamId) {
-        Optional<Team> team = teamRepository.findById(teamId);
-        return team.map(Team::getMembers).orElse(null);
+        List<User> result = new ArrayList<>();
+        Team team = teamRepository.findById(teamId).orElse(null);
+        if(team != null) {
+            if(!team.getMembers().contains(team.getManager()))
+                result.add(team.getManager());
+            result.addAll(team.getMembers());
+            return result;
+        }
+        return null;
     }
 
     public User getUserByEmail(String email) {

@@ -1,6 +1,7 @@
 package com.demo.springbootdemo.controller;
 
 import com.demo.springbootdemo.configuration.EmailConfigProperties;
+import com.demo.springbootdemo.entity.Holiday;
 import com.demo.springbootdemo.entity.User;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -13,7 +14,10 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 
 @Service
 public class EmailController {
@@ -43,6 +47,30 @@ public class EmailController {
 
         sendHtmlEmail(email, subject, htmlContent);
     }
+    /**
+     * Send approved holiday email
+     */
+    public void sendHolidayApprovedEmail(Holiday holiday,boolean approved)
+            throws MessagingException {
+        Date fromDate = new Date(holiday.getFrom());
+        Date toDate = new Date(holiday.getTo());
+        SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM dd yyyy", Locale.ENGLISH);
+        Context context = new Context();
+        context.setVariable("name", holiday.getUser().getFirstname() + " " + holiday.getUser().getLastname());
+        context.setVariable("currentYear", new Date().getYear() + 1900);
+        context.setVariable("companyName", holiday.getUser().getCompany().getName());
+        context.setVariable("holidayStart", formatter.format(fromDate));
+        context.setVariable("holidayEnd", formatter.format(toDate));
+        context.setVariable("type", holiday.getType().name().toLowerCase());
+        context.setVariable("portalUrl", loginUrl);
+        context.setVariable("approved", approved);
+
+        String subject = approved ? "WorkSync holiday request approved" : "WorkSync holiday request rejected";
+        String htmlContent = templateEngine.process("email/holiday-request-email", context);
+
+        sendHtmlEmail(holiday.getUser().getEmail(), subject, htmlContent);
+    }
+
     /**
      * Send welcome email with generated password to new user
      */

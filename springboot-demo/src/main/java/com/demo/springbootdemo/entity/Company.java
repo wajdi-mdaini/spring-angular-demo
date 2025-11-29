@@ -22,6 +22,7 @@ public class Company {
     private String website;
     private String logoPublicId;
     private String logoURL;
+    private Long at;
 
     @OneToOne
     private CompanySettings settings;

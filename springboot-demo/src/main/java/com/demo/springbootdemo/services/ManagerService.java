@@ -99,8 +99,11 @@ public class ManagerService {
                 manager.setTeam(null);
             }
             manager = userController.save(manager);
-            Team team = editTeamRequest.getTeam();
+            Team team = teamController.getTeamById(editTeamRequest.getTeamId());
+            team.setName(editTeamRequest.getName());
+            team.setDescription(editTeamRequest.getDescription());
             team.setManager(manager);
+
             team = companyController.saveTeam(team);
             team = userController.emptyUserTeam(editTeamRequest.getRemainingUsers(),team);
             userController.setUserTeam(editTeamRequest.getTeamMembers(),team);
@@ -133,17 +136,24 @@ public class ManagerService {
                 response.setDoLogout(true);
             }else{
                 List<User> users = teamController.getTeamMembers(idTeam);
-                response.setData(users);
-                response.setStatus(HttpStatus.OK);
-                response.setSuccess(true);
-                response.setShowToast(false);
+                if(users != null){
+                    response.setData(users);
+                    response.setStatus(HttpStatus.OK);
+                    response.setSuccess(true);
+                    response.setShowToast(false);
+                }else{
+                    response.setData(null);
+                    response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+                    response.setMessageLabel("error_status_INTERNAL_SERVER_ERROR");
+                    response.setSuccess(false);
+                }
             }
         }
         return response;
     }
 
     @PutMapping(path = "/addteam")
-    public ApiResponse<Team> addTeam(@RequestBody() AddTeamRequest addTeamRequest, HttpServletRequest request) {
+    public ApiResponse<Team> addTeam(@RequestBody() NewTeamDTO newTeamDTO, HttpServletRequest request) {
         ApiResponse<Team> response = new ApiResponse<>();
         String token = jwtUtil.extractTokenFromCookie(request);
         if (token == null || !jwtUtil.validateToken(token)) {
@@ -162,17 +172,21 @@ public class ManagerService {
                 response.setMessageLabel("auth_profile_expired_error_message");
                 response.setDoLogout(true);
             }else{
-                User manager = userController.getUserByEmail(addTeamRequest.getManagerEmail());
+                User manager = userController.getUserByEmail(newTeamDTO.getTeamManagerEmail());
+                Company company = companyController.getCompanyById(newTeamDTO.getCompanyId());
                 if(!manager.getRole().equals(Role.ADMIN)){
                     manager.setRole(Role.MANAGER);
                     manager.setTeam(null);
+                    manager = userController.save(manager);
                 }
-                manager = userController.save(manager);
-                Team team = addTeamRequest.getTeam();
+                Team team = new Team();
+                team.setName(newTeamDTO.getTeamName());
+                team.setDescription(newTeamDTO.getTeamDescription());
+                team.setCompany(company);
                 team.setManager(manager);
 
                 team = companyController.saveTeam(team);
-                userController.addUsersToTeam(addTeamRequest.getMemberEmails(),team);
+                userController.addUsersToTeam(newTeamDTO.getMemberEmails(),team);
                 response.setData(team);
                 response.setStatus(HttpStatus.OK);
                 response.setSuccess(true);
@@ -265,7 +279,9 @@ public class ManagerService {
                     users.addAll(team.getMembers());
                 }
             } else if(user.getRole().equals(Role.ADMIN)){
-                users.addAll(company.getMembers());
+                List<User> allCompanyMembers = company.getMembers();
+                allCompanyMembers.remove(company.getCompanyCreator());
+                users.addAll(allCompanyMembers);
             }
             users.remove(user);
             response.setData(users);
@@ -362,8 +378,11 @@ public class ManagerService {
                                 "notification_edit_user_message");
                     }
                 }
-                Team team = teamController.getTeamById(editUserRequest.getUserDTO().getTeamId());
-                user.setTeam(team);
+                User userWithSameEmail = userController.getUserByEmail(editUserRequest.getUserDTO().getEmail());
+                if(editUserRequest.getUserDTO().getTeamId() != null) {
+                    Team team = teamController.getTeamById(editUserRequest.getUserDTO().getTeamId());
+                    user.setTeam(team);
+                }else user.setTeam(null);
                 user.setFirstname(editUserRequest.getUserDTO().getFirstname());
                 user.setLastname(editUserRequest.getUserDTO().getLastname());
                 user.setDateOfBirth(editUserRequest.getUserDTO().getDateOfBirth());
@@ -373,28 +392,39 @@ public class ManagerService {
                 user.setPostCode(editUserRequest.getUserDTO().getPostCode());
                 user.setDegree(editUserRequest.getUserDTO().getDegree());
                 user.setTitle(editUserRequest.getUserDTO().getTitle());
+                user.setRole(editUserRequest.getUserDTO().getRole());
+                if(user.getRole().equals(Role.ADMIN)){
+                    User userTo;
+                    userTo = user.getTeam() != null ?  user.getTeam().getManager() : user.getCompany().getCompanyCreator();
+                    userController.createNotification(user,userTo,new Date().getTime(),"notification_edit_to_admin_manager_notif_title","notification_edit_to_admin_manager_notif_label");
+                    user.setTeam(null);
+                }
                 if (!editUserRequest.isEditRequest()) {
                     user.setEmail(editUserRequest.getUserDTO().getEmail());
-                    user.setRole(Role.EMPLOYEE);
                     user.setProfilePictureUrl("assets/img/default_profile_picture.png");
                     user.setCompany(authUser.getCompany());
                     user.setPassword(userController.getNewPasswordAndSendMail(user));
                     user.setFirstLogin(true);
+                    user.setCreationDate(new Date().getTime());
                     user.setAttempts(0);
                     user.setLocked(false);
                     user.setSicknessLeaverSold(0F);
                     user.setHolidaySold(0F);
                 }
-                user = userController.save(user);
-                if (editUserRequest.isEditRequest())
-                    response.setMessageLabel("manage_users_edit_user_done");
-                 else
-                    response.setMessageLabel("manage_users_add_user_done");
-
-
+                if(editUserRequest.isEditRequest() || userWithSameEmail == null){
+                    user = userController.save(user);
+                    if (editUserRequest.isEditRequest())
+                        response.setMessageLabel("manage_users_edit_user_done");
+                    else
+                        response.setMessageLabel("manage_users_add_user_done");
+                    response.setSuccess(true);
+                }else{
+                    response.setMessageLabel("auth_signup_used_email_error_message");
+                    response.setSuccess(false);
+                }
                 response.setData(user);
                 response.setStatus(HttpStatus.OK);
-                response.setSuccess(true);
+
             }
         }
         return response;

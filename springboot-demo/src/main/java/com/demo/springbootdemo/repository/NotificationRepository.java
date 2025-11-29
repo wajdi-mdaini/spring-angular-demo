@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
     Optional<Notification> findById(Long id);
-    List<Notification> findByTo(User to);
+    List<Notification> findByToOrderByAtDesc(User to);
     List<Notification> findByFrom(User to);
     List<Notification> findByFromAndTitleLabelIn(User userFrom, List<String> titles);
 }

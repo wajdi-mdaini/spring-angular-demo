@@ -40,6 +40,9 @@ public class LoginService {
     @Value("${app.token.default.expiration}")
     private int EXPIRATION;
 
+    @Value("${app.front.base.path}")
+    private String frontBasePath;
+
     @RequestMapping(path = "/login", method = RequestMethod.POST)
     public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest loginRequest,
                                                             HttpServletResponse httpResponse) {
@@ -63,7 +66,7 @@ public class LoginService {
                 response.setShowToast(false);
                 Cookie cookie = new Cookie("jwt", jwtToken);
                 cookie.setHttpOnly(true); // protect from JavaScript
-                cookie.setSecure(true);   // only HTTPS
+                cookie.setSecure(frontBasePath.startsWith("https://"));   // only HTTPS
                 cookie.setPath("/");      // available for the whole domain
                 if(company.getSettings() != null){
                     cookie.setMaxAge(company.getSettings().getJwtTokenExpireIn() * 60);
@@ -112,7 +115,7 @@ public class LoginService {
             String jwtToken = jwtUtil.generateToken(response.getData().getEmail(), company);
             Cookie cookie = new Cookie("jwt", jwtToken);
             cookie.setHttpOnly(true); // protect from JavaScript
-            cookie.setSecure(true);   // only HTTPS
+            cookie.setSecure(frontBasePath.startsWith("https://"));   // only HTTPS
             cookie.setPath("/");      // available for the whole domain
             if (company.getSettings() != null) {
                 cookie.setMaxAge(company.getSettings().getJwtTokenExpireIn() * 60);
@@ -172,7 +175,7 @@ public class LoginService {
     public ResponseEntity<?> logout(HttpServletResponse response) {
         Cookie cookie = new Cookie("jwt", null);
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);
+        cookie.setSecure(frontBasePath.startsWith("https://"));
         cookie.setPath("/");
         cookie.setMaxAge(0); // delete cookie
         response.addCookie(cookie);
@@ -197,7 +200,6 @@ public class LoginService {
                 response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
                 response.setMessageLabel("error_status_INTERNAL_SERVER_ERROR");
                 response.setSuccess(false);
-                response.setShowToast(false);
             }else if(user == null){
                 response.setData(null);
                 response.setStatus(HttpStatus.UNAUTHORIZED);

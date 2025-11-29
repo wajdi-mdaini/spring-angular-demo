@@ -4,6 +4,7 @@ import com.demo.springbootdemo.configuration.JwtUtil;
 import com.demo.springbootdemo.controller.*;
 import com.demo.springbootdemo.entity.*;
 import com.demo.springbootdemo.model.*;
+import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,10 @@ import java.util.*;
 public class PublicService {
 
     private final JwtUtil jwtUtil;
+
+    @Autowired
+    private EventController eventController;
+
     @Autowired
     private TeamController teamController;
 
@@ -46,6 +51,9 @@ public class PublicService {
 
     @Autowired
     private HolidayController holidayController;
+
+    @Autowired
+    private EmailController emailController;
 
     @PostMapping("/upload-profile")
     public ResponseEntity<ApiResponse<User>> uploadProfilePicture(@RequestParam("file") MultipartFile file,
@@ -477,7 +485,8 @@ public class PublicService {
             document.setDescription(documentDTO.getDescription());
             User userTo = userController.getUserByEmail(documentDTO.getToUserEmail());
             document.setTo(userTo);
-            documentController.saveDocument(document);
+            document = documentController.saveDocument(document);
+            documentController.sendEditDocumentNotification(document, document.getFrom(), userTo);
             response.setData(document);
             response.setStatus(HttpStatus.OK);
             response.setSuccess(true);
@@ -643,7 +652,7 @@ public class PublicService {
     }
 
     @GetMapping(path = "/rejectholidaysrequests")
-    public ApiResponse<Holiday> rejectHolidayRequest(@RequestParam("id") Long holidayId, HttpServletRequest request) {
+    public ApiResponse<Holiday> rejectHolidayRequest(@RequestParam("id") Long holidayId, HttpServletRequest request) throws MessagingException {
         ApiResponse<Holiday> response = new ApiResponse<>();
         String token = jwtUtil.extractTokenFromCookie(request);
         if (token == null || !jwtUtil.validateToken(token)) {
@@ -674,6 +683,7 @@ public class PublicService {
 
                 holiday = holidayController.saveHoliday(holiday);
                 holidayController.holidayRequestStatusChange(holiday.getUser(),user,HolidayStatus.REJECTED);
+                emailController.sendHolidayApprovedEmail(holiday,false);
                 response.setData(holiday);
                 response.setStatus(HttpStatus.OK);
                 response.setMessageLabel("book_holiday_rejected_toast_message");
@@ -685,7 +695,7 @@ public class PublicService {
     }
 
     @GetMapping(path = "/approveholidaysrequests")
-    public ApiResponse<Holiday> approveHolidayRequest(@RequestParam("id") Long holidayId, HttpServletRequest request) {
+    public ApiResponse<Holiday> approveHolidayRequest(@RequestParam("id") Long holidayId, HttpServletRequest request) throws MessagingException {
         ApiResponse<Holiday> response = new ApiResponse<>();
         String token = jwtUtil.extractTokenFromCookie(request);
         if (token == null || !jwtUtil.validateToken(token)) {
@@ -708,6 +718,7 @@ public class PublicService {
                 holiday.setAt(new Date().getTime());
                 holiday = holidayController.saveHoliday(holiday);
                 holidayController.holidayRequestStatusChange(holiday.getUser(),user,HolidayStatus.APPROVED);
+                emailController.sendHolidayApprovedEmail(holiday,true);
                 response.setData(holiday);
                 response.setStatus(HttpStatus.OK);
                 response.setMessageLabel("book_holiday_approved_toast_message");
@@ -774,5 +785,91 @@ public class PublicService {
             current.add(Calendar.DATE, 1);
         }
         return countSelectedDays;
+    }
+
+    @GetMapping(path = "/companysummary")
+    public ApiResponse<CompanySummary> getCompanySummary(HttpServletRequest request) {
+        ApiResponse<CompanySummary> response = new ApiResponse<>();
+        String token = jwtUtil.extractTokenFromCookie(request);
+        if (token == null || !jwtUtil.validateToken(token)) {
+            response.setData(null);
+            response.setStatus(HttpStatus.UNAUTHORIZED);
+            response.setSuccess(false);
+            response.setMessageLabel("auth_profile_expired_error_message");
+            response.setDoLogout(true);
+        } else {
+            int employeesNumber = 0;
+            int administratorsNumber = 0;
+            int managersNumber = 0;
+            String email = jwtUtil.extractUsername(token);
+            User authUser = userController.getUserByEmail(email);
+
+            CompanySummary summary = new CompanySummary();
+            summary.setCompany(authUser.getCompany());
+            summary.setCompanyCreator(authUser.getCompany().getCompanyCreator());
+            summary.setTeam(authUser.getTeam());
+
+            Map<String, Integer> numbers = new HashMap<>();
+            for (User allCompanyUser : authUser.getCompany().getMembers()) {
+                if (allCompanyUser.getRole().equals(Role.EMPLOYEE)) employeesNumber++;
+                else if (allCompanyUser.getRole().equals(Role.MANAGER)) managersNumber++;
+                else if (allCompanyUser.getRole().equals(Role.ADMIN)) administratorsNumber++;
+            }
+            numbers.put("employeesNumber",employeesNumber);
+            numbers.put("administratorsNumber",administratorsNumber);
+            numbers.put("managersNumber",managersNumber);
+            summary.setUserNumbers(numbers);
+
+
+            if(authUser.getTeam() != null) {
+                summary.setTeamManager(authUser.getTeam().getManager());
+                summary.setTeamMembers(authUser.getTeam().getMembers());
+            }
+
+            List<Document> documents = authUser.getDocumentsTo();
+            documents.sort(Comparator.comparing(Document::getAt).reversed());
+            List<Document> lastDocuments = new  ArrayList<>();
+            for(int i = 0; i < documents.size(); i++){
+                if(i < 4 ){
+                    lastDocuments.add(documents.get(i));
+                }else break;
+            }
+            summary.setLastDocuments(lastDocuments);
+
+            int activityNumber = 0;
+            int meetingNumber = 0;
+            int eventNumber = 0;
+            int taskNumber = 0;
+            numbers = new HashMap<>();
+            List<Event> allEvents = eventController.getEventsOfTheMonth();
+            int stoppingIndex = 0;
+            List<Event> lastEvents = new ArrayList<>();
+            for (Event event : allEvents) {
+                if (event.getParticipants().contains(authUser)) {
+                    if(stoppingIndex < 4 ) {
+                        lastEvents.add(event);
+                        stoppingIndex++;
+                    }
+                    if(event.getEventType().equals(EventType.MEETING)) meetingNumber++;
+                    else if(event.getEventType().equals(EventType.TASK)) taskNumber++;
+                    else if(event.getEventType().equals(EventType.EVENT)) eventNumber++;
+                    else if(event.getEventType().equals(EventType.ACTIVITY)) activityNumber++;
+                }
+            }
+            numbers.put("meetingNumber",meetingNumber);
+            numbers.put("taskNumber",taskNumber);
+            numbers.put("eventNumber",eventNumber);
+            numbers.put("activityNumber",activityNumber);
+            summary.setEventNumbers(numbers);
+            summary.setLastEvents(lastEvents);
+
+
+            response.setData(summary);
+            response.setStatus(HttpStatus.OK);
+            response.setShowToast(false);
+            response.setSuccess(true);
+
+        }
+        return response;
     }
 }
